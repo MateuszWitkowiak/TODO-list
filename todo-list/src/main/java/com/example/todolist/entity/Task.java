@@ -1,15 +1,19 @@
 package com.example.todolist.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "tasks")
-public class Tasks {
+public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -28,7 +32,7 @@ public class Tasks {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categories_id", nullable = false)
-    private Categories category;
+    private Category category;
 
     @CreationTimestamp
     @Column(name = "created_at")
