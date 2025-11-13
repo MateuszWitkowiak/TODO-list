@@ -1,4 +1,9 @@
 package com.example.todolist.repository;
 
-public interface CategoryRepository {
+
+import com.example.todolist.entity.Categories;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.UUID;
+
+public interface CategoryRepository extends JpaRepository<Categories, UUID> {
 }
