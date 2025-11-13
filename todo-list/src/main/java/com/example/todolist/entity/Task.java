@@ -28,10 +28,10 @@ public class Task {
     private Status status;
 
     @Column(name = "dueDate")
-    private String dueDate;
+    private LocalDateTime dueDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categories_id", nullable = false)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
     @CreationTimestamp
