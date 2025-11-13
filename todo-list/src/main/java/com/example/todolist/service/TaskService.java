@@ -1,6 +1,7 @@
 package com.example.todolist.service;
 
 import com.example.todolist.entity.Task;
+import com.example.todolist.exception.TaskNotFoundException;
 import com.example.todolist.repository.TaskRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,6 @@ public class TaskService {
 
     @Transactional
     public Task updateTask(UUID taskId) {
-        Task task = findTaskById(taskId).orElseThrow(() -> new RuntimeException("Task not found."));
+        Task task = findTaskById(taskId).orElseThrow(() -> new TaskNotFoundException());
     }
 }
