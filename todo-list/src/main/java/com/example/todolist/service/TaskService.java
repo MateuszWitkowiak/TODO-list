@@ -1,6 +1,6 @@
 package com.example.todolist.service;
 
-import com.example.todolist.dto.TaskUpdateDTO;
+import com.example.todolist.dto.UpdateTaskRequest;
 import com.example.todolist.entity.Category;
 import com.example.todolist.entity.Task;
 import com.example.todolist.exception.CategoryNotFoundException;
@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-// get (lista z paginacją, single), post, put (aktualizacja), delete
 @Service
 public class TaskService {
     private final TaskRepository taskRepository;
@@ -30,23 +29,20 @@ public class TaskService {
         taskRepository.deleteById(taskId);
     }
 
-    @Transactional(readOnly = true)
     public List<Task> getAllTasks() {
         return taskRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
     public Task findTaskById(UUID taskId) {
         return taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("Id", taskId));
     }
 
-    @Transactional(readOnly = true)
     public List<Task> searchTasksByTitle(String keyword, int page, int size) {
         return taskRepository.searchTasksByTitle(keyword, PageRequest.of(page, size));
     }
 
     @Transactional
-    public Task updateTask(UUID taskId, TaskUpdateDTO dto) {
+    public Task updateTask(UUID taskId, UpdateTaskRequest dto) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("id", taskId));
 
         task.setTitle(dto.title());
@@ -61,7 +57,7 @@ public class TaskService {
     }
 
     @Transactional
-    public Task createTask(TaskUpdateDTO dto) {
+    public Task createTask(UpdateTaskRequest dto) {
         Task task = new Task();
         task.setTitle(dto.title());
         task.setDescription(dto.description());

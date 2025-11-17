@@ -4,7 +4,7 @@ import com.example.todolist.entity.Status;
 
 import java.util.UUID;
 
-public record TaskUpdateDTO(
+public record UpdateTaskRequest(
         String title,
         String description,
         Status status,
