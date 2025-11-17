@@ -24,7 +24,7 @@ public class Task {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private Status status;
 
     @Column(name = "dueDate")
@@ -35,7 +35,7 @@ public class Task {
     private Category category;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
