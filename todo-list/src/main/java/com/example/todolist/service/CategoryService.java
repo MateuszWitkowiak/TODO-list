@@ -25,10 +25,12 @@ public class CategoryService {
         categoryRepository.delete(category);
     }
 
+    @Transactional(readOnly = true)
     public List<Category> findAllCategories() {
         return categoryRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Category findCategoryById(UUID categoryId) {
         return categoryRepository.findById(categoryId).orElseThrow(() -> new CategoryNotFoundException("id", categoryId));
     }
