@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(CategoryNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleCategoryNotFound(CategoryNotFoundException ex) {
+    public ResponseEntity<Map<String, Object>> CategoryNotFoundException(CategoryNotFoundException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.NOT_FOUND.value());
