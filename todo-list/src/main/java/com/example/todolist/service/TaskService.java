@@ -73,7 +73,6 @@ public class TaskService {
         Category category = categoryRepository.findById(dto.categoryId()).orElseThrow(() -> new CategoryNotFoundException("id", dto.categoryId()));
         task.setCategory(category);
 
-        taskRepository.save(task);
-        return task;
+        return taskRepository.save(task);
     }
 }
