@@ -21,12 +21,12 @@ public class UserService {
 
     @Transactional
     public User register(RegisterRequest registerDTO) {
-        userRepository.findByEmail(registerDTO.email()).ifPresent(u -> {throw new UserAlreadyExistsException("User with this email already exists.");
+        userRepository.findByEmail(registerDTO.getEmail()).ifPresent(u -> {throw new UserAlreadyExistsException("User with this email already exists.");
         });
 
         User user = new User();
-        user.setEmail(registerDTO.email());
-        user.setPassword(encoder.encode(registerDTO.password()));
+        user.setEmail(registerDTO.getEmail());
+        user.setPassword(encoder.encode(registerDTO.getPassword()));
         user.setRole("USER");
 
         userRepository.save(user);

@@ -1,7 +1,15 @@
 package com.example.todolist.dto;
 
-public record RegisterRequest(
-        String email,
-        String password
-)
-{}
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class RegisterRequest {
+    private String email;
+    private String password;
+}
