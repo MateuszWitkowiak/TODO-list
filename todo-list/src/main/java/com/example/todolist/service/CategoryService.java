@@ -1,6 +1,7 @@
 package com.example.todolist.service;
 
 import com.example.todolist.dto.CreateCategoryRequest;
+import com.example.todolist.dto.UpdateCategoryRequest;
 import com.example.todolist.entity.Category;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
@@ -20,7 +21,7 @@ public class CategoryService {
 
     @Transactional
     public void deleteCategoryById(UUID categoryId) {
-        var category = categoryRepository.findById(categoryId)
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("id", categoryId));
         categoryRepository.delete(category);
     }
@@ -44,15 +45,16 @@ public class CategoryService {
     }
 
     @Transactional
-    public Category updateCategory(UUID id, Category update) {
+    public Category updateCategory(UUID id, UpdateCategoryRequest update) {
         Category category = findCategoryById(id);
 
-        if (update.getName() != null) {
-            category.setName(update.getName());
+        if (update.name() != null) {
+            category.setName(update.name());
         }
-        if (update.getColor() != null) {
-            category.setColor(update.getColor());
+        if (update.color() != null) {
+            category.setColor(update.color());
         }
+
         return categoryRepository.save(category);
     }
 }

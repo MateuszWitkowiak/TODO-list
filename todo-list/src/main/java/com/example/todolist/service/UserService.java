@@ -20,7 +20,7 @@ public class UserService {
     }
 
     @Transactional
-    public User register(RegisterRequest registerDTO) {
+    public void register(RegisterRequest registerDTO) {
         userRepository.findByEmail(registerDTO.getEmail()).ifPresent(u -> {throw new UserAlreadyExistsException("User with this email already exists.");
         });
 
@@ -30,7 +30,5 @@ public class UserService {
         user.setRole("USER");
 
         userRepository.save(user);
-
-        return userRepository.save(user);
     }
 }

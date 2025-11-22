@@ -24,7 +24,7 @@ public class TaskService {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
     }
-    
+
     @Transactional
     public void deleteTaskById(UUID taskId) {
         taskRepository.deleteById(taskId);
@@ -75,4 +75,5 @@ public class TaskService {
 
         return taskRepository.save(task);
     }
+    
 }
