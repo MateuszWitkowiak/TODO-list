@@ -1,5 +1,6 @@
 package com.example.todolist.repository;
 
+import com.example.todolist.entity.Status;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,6 +11,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
-    @Query("SELECT t FROM Task t WHERE t.title LIKE %:keyword%")
+
+    @Query("""
+        SELECT t FROM Task t
+        WHERE LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    """)
     List<Task> searchTasksByTitle(@Param("keyword") String keyword, Pageable pageable);
+
+    long countByStatus(Status status);
+
+    List<Task> findTop5ByDueDateIsNotNullOrderByDueDateAsc();
 }
+

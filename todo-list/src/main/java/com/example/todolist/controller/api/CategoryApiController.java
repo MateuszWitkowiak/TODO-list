@@ -1,6 +1,7 @@
 package com.example.todolist.controller.api;
 
 import com.example.todolist.dto.CreateCategoryRequest;
+import com.example.todolist.dto.UpdateCategoryRequest;
 import com.example.todolist.entity.Category;
 import com.example.todolist.service.CategoryService;
 import jakarta.validation.Valid;
@@ -27,7 +28,7 @@ public class CategoryApiController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Category> getById(@PathVariable UUID id) {
+    public ResponseEntity<Category> getById(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(categoryService.findCategoryById(id));
     }
 
@@ -38,13 +39,13 @@ public class CategoryApiController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> update(@PathVariable UUID id, @RequestBody Category update) {
+    public ResponseEntity<Category> update(@PathVariable("id") UUID id, @RequestBody UpdateCategoryRequest update) {
         Category updated = categoryService.updateCategory(id, update);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
         categoryService.deleteCategoryById(id);
         return ResponseEntity.noContent().build();
     }

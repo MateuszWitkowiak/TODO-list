@@ -28,15 +28,15 @@ public class TaskApiController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable UUID id) {
+    public ResponseEntity<Task> getTaskById(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(taskService.findTaskById(id));
     }
 
     @GetMapping("/search")
     public ResponseEntity<List<Task>> searchTasks(
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value="page", defaultValue = "0") int page,
+            @RequestParam(value="size", defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(taskService.searchTasksByTitle(keyword, page, size));
     }
@@ -49,7 +49,7 @@ public class TaskApiController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<Task> updateTask(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody @Valid UpdateTaskRequest dto
     ) {
         Task updated = taskService.updateTask(id, dto);
@@ -57,7 +57,7 @@ public class TaskApiController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteTask(@PathVariable("id") UUID id) {
         taskService.deleteTaskById(id);
         return ResponseEntity.noContent().build();
     }

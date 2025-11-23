@@ -1,8 +1,72 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head><title>Home</title></head>
-<body>
-<h2>Witaj!</h2>
-<p>Jesteś zalogowany.</p>
-</body>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<div layout:fragment="content">
+
+    <!-- Welcome Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="mb-2">Witaj w swoim TodoList!</h2>
+            <p class="text-muted">Zarządzaj zadaniami, planuj i miej wszystko pod kontrolą.</p>
+
+            <a class="btn btn-primary" th:href="@{/tasks}">
+                Przejdź do listy zadań
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 th:text="${stats.totalTasks}">0</h4>
+                    <p class="text-muted">Wszystkich zadań</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 th:text="${stats.doneTasks}">0</h4>
+                    <p class="text-muted">Ukończonych</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 th:text="${stats.todoTasks}">0</h4>
+                    <p class="text-muted">Do zrobienia</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Tasks -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Najbliższe zadania</h5>
+
+            <div th:if="${#lists.isEmpty(upcomingTasks)}">
+                <p class="text-muted">Brak nadchodzących zadań 📭</p>
+            </div>
+
+            <ul th:unless="${#lists.isEmpty(upcomingTasks)}" class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center"
+                    th:each="task : ${upcomingTasks}">
+                    <span th:text="${task.title}">Tytuł zadania</span>
+                    <span class="badge bg-primary"
+                          th:text="${#temporals.format(task.dueDate, 'dd.MM.yyyy')}">
+                    </span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+
 </html>

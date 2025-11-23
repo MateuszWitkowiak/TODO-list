@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${pageTitle}">Todo App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+</head>
+
+<style>
+    /* Delikatna animacja i efekt hover dla linków */
+    .nav-link-custom {
+        color: rgba(255,255,255,0.9);
+        font-size: 1.1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: background 0.2s ease, color 0.2s ease;
+        text-decoration: none;
+    }
+
+    .nav-link-custom:hover {
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+    }
+
+    /* Logout z lekkim czerwonym akcentem */
+    .nav-link-logout:hover {
+        background: rgba(255, 70, 70, 0.3);
+    }
+</style>
+
+
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg py-3"
+     style="background: linear-gradient(90deg, #316ff6, #4a8cf4);">
+    <div class="container-fluid">
+
+        <div class="row w-100 align-items-center">
+
+            <div class="col d-flex align-items-center">
+                <a class="navbar-brand fw-bold m-0"
+                   style="font-size: 1.7rem; color: #fff;"
+                   th:href="@{/}">
+                    TodoList
+                </a>
+            </div>
+
+            <div class="col d-flex justify-content-center gap-3">
+                <a class="nav-link-custom" th:href="@{/}">Home</a>
+                <a class="nav-link-custom" th:href="@{/tasks}">Tasks</a>
+                <a class="btn btn-light px-3 py-1 fw-semibold"
+                   style="border-radius: 8px;"
+                   th:href="@{/tasks/add}">
+                    + Add Task
+                </a>
+            </div>
+
+            <div class="col d-flex justify-content-end">
+                <a class="nav-link-custom nav-link-logout" th:href="@{/logout}">
+                    Logout
+                </a>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+
+<div class="container py-4" layout:fragment="content">
+</div>
+
+<footer class="bg-white border-top py-3 mt-5">
+    <div class="container text-center text-muted">
+        © 2025 TodoList — All rights reserved
+    </div>
+</footer>
+
+</body>
+</html>
