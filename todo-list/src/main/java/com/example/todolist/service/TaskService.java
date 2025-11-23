@@ -3,6 +3,7 @@ package com.example.todolist.service;
 import com.example.todolist.dto.CreateTaskRequest;
 import com.example.todolist.dto.UpdateTaskRequest;
 import com.example.todolist.entity.Category;
+import com.example.todolist.entity.Status;
 import com.example.todolist.entity.Task;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.exception.TaskNotFoundException;
@@ -11,7 +12,10 @@ import com.example.todolist.repository.TaskRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -74,6 +78,26 @@ public class TaskService {
         task.setCategory(category);
 
         return taskRepository.save(task);
+    }
+
+    public Map<String, Long> getStats() {
+        Map<String, Long> stats = new HashMap<>();
+
+        long total = taskRepository.count();
+        long todo = taskRepository.countByStatus(Status.TODO);
+        long inProgress = taskRepository.countByStatus(Status.IN_PROGRESS);
+        long done = taskRepository.countByStatus(Status.DONE);
+
+        stats.put("totalTasks", total);
+        stats.put("todoTasks", todo);
+        stats.put("inProgressTasks", inProgress);
+        stats.put("doneTasks", done);
+
+        return stats;
+    }
+
+    public List<Task> getUpcomingTasks() {
+        return taskRepository.findTop5ByDueDateIsNotNullOrderByDueDateAsc();
     }
 
 }
