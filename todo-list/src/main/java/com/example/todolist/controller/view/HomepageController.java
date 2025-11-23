@@ -26,12 +26,5 @@ public class HomepageController {
 
         return "index";
     }
-
-    @GetMapping("/tasks/add")
-    public String showAddTaskForm(Model model) {
-        model.addAttribute("task", new CreateTaskRequest(null, null, null, null, null));
-        model.addAttribute("categories", categoryService.findAllCategories());
-        return "task-add";
-    }
 }
 

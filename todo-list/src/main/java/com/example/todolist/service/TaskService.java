@@ -69,12 +69,12 @@ public class TaskService {
     public Task createTask(CreateTaskRequest dto) {
         Task task = new Task();
 
-        task.setTitle(dto.title());
-        task.setDescription(dto.description());
-        task.setStatus(dto.status());
-        task.setDueDate(dto.dueDate());
+        task.setTitle(dto.getTitle());
+        task.setDescription(dto.getDescription());
+        task.setStatus(dto.getStatus());
+        task.setDueDate(dto.getDueDate());
 
-        Category category = categoryRepository.findById(dto.categoryId()).orElseThrow(() -> new CategoryNotFoundException("id", dto.categoryId()));
+        Category category = categoryRepository.findById(dto.getCategoryId()).orElseThrow(() -> new CategoryNotFoundException("id", dto.getCategoryId()));
         task.setCategory(category);
 
         return taskRepository.save(task);
