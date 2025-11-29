@@ -144,7 +144,6 @@ public class TaskServiceTest {
                 LocalDateTime.now(),
                 categoryId
         );
-
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
         when(taskRepository.save(existingTask)).thenReturn(existingTask);

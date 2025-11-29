@@ -1,7 +1,10 @@
 package com.example.todolist.controller.api;
 
 import com.example.todolist.dto.CreateTaskRequest;
+import com.example.todolist.dto.CreateTaskResponse;
+import com.example.todolist.dto.GetTaskResponse;
 import com.example.todolist.dto.UpdateTaskRequest;
+import com.example.todolist.dto.mapper.TaskMapper;
 import com.example.todolist.entity.Task;
 import com.example.todolist.service.TaskService;
 import jakarta.validation.Valid;
@@ -17,43 +20,53 @@ import java.util.UUID;
 public class TaskApiController {
 
     private final TaskService taskService;
+    private final TaskMapper taskMapper;
 
-    public TaskApiController(TaskService taskService) {
+    public TaskApiController(TaskService taskService, TaskMapper taskMapper) {
         this.taskService = taskService;
+        this.taskMapper = taskMapper;
     }
 
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        return ResponseEntity.ok(taskService.getAllTasks());
+    public ResponseEntity<List<GetTaskResponse>> getAllTasks() {
+        List<Task> tasks = taskService.getAllTasks();
+        List<GetTaskResponse> response = taskMapper.mapToGetTaskResponse(tasks);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable("id") UUID id) {
-        return ResponseEntity.ok(taskService.findTaskById(id));
+    public ResponseEntity<GetTaskResponse> getTaskById(@PathVariable("id") UUID id) {
+        Task task = taskService.findTaskById(id);
+        GetTaskResponse response = taskMapper.mapToGetTaskResponse(task);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Task>> searchTasks(
+    public ResponseEntity<List<GetTaskResponse>> searchTasks(
             @RequestParam("keyword") String keyword,
-            @RequestParam(value="page", defaultValue = "0") int page,
-            @RequestParam(value="size", defaultValue = "10") int size
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(taskService.searchTasksByTitle(keyword, page, size));
+        List<Task> tasks = taskService.searchTasksByTitle(keyword, page, size);
+        List<GetTaskResponse> response = taskMapper.mapToGetTaskResponse(tasks);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody @Valid CreateTaskRequest dto) {
+    public ResponseEntity<CreateTaskResponse> createTask(@RequestBody @Valid CreateTaskRequest dto) {
         Task created = taskService.createTask(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        CreateTaskResponse response = taskMapper.mapToCreateTaskResponse(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Task> updateTask(
+    public ResponseEntity<GetTaskResponse> updateTask(
             @PathVariable("id") UUID id,
             @RequestBody @Valid UpdateTaskRequest dto
     ) {
         Task updated = taskService.updateTask(id, dto);
-        return ResponseEntity.ok(updated);
+        GetTaskResponse response = taskMapper.mapToGetTaskResponse(updated);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
