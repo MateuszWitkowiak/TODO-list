@@ -1,6 +1,6 @@
 package com.example.todolist.controller.view;
 
-import com.example.todolist.dto.RegisterRequest;
+import com.example.todolist.dto.request.RegisterRequest;
 import com.example.todolist.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

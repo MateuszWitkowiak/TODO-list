@@ -1,7 +1,10 @@
 package com.example.todolist.controller.api;
 
-import com.example.todolist.dto.CreateCategoryRequest;
-import com.example.todolist.dto.UpdateCategoryRequest;
+import com.example.todolist.dto.mapper.CategoryMapper;
+import com.example.todolist.dto.request.CreateCategoryRequest;
+import com.example.todolist.dto.request.UpdateCategoryRequest;
+import com.example.todolist.dto.response.CreateCategoryResponse;
+import com.example.todolist.dto.response.GetCategoryResponse;
 import com.example.todolist.entity.Category;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.service.CategoryService;
@@ -10,8 +13,8 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -26,23 +29,34 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(CategoryApiController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class CategoryApiControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private CategoryService categoryService;
+
+    @MockitoBean
+    private CategoryMapper categoryMapper;
 
     @Test
     void getAll_ShouldReturnListOfCategories() throws Exception {
         Category c1 = new Category();
         c1.setId(UUID.randomUUID());
         c1.setName("Work");
+        c1.setColor("#AAAAAA");
 
         Category c2 = new Category();
         c2.setId(UUID.randomUUID());
         c2.setName("Home");
+        c2.setColor("#BBBBBB");
+
+        GetCategoryResponse r1 = new GetCategoryResponse(c1.getId(), "Work", "#AAAAAA", null);
+        GetCategoryResponse r2 = new GetCategoryResponse(c2.getId(), "Home", "#BBBBBB", null);
 
         when(categoryService.findAllCategories()).thenReturn(List.of(c1, c2));
+        when(categoryMapper.mapToGetCategoryResponse(List.of(c1, c2)))
+                .thenReturn(List.of(r1, r2));
 
         mockMvc.perform(get("/api/v1/categories"))
                 .andExpect(status().isOk())
@@ -58,12 +72,19 @@ class CategoryApiControllerTest {
         Category category = new Category();
         category.setId(id);
         category.setName("Work");
+        category.setColor("#FFFFFF");
+
+        GetCategoryResponse response =
+                new GetCategoryResponse(id, "Work", "#FFFFFF", null);
 
         when(categoryService.findCategoryById(id)).thenReturn(category);
+        when(categoryMapper.mapToGetCategoryResponse(category)).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/categories/" + id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is("Work")));
+                .andExpect(jsonPath("$.name", is("Work")))
+                .andExpect(jsonPath("$.color", is("#FFFFFF")))
+                .andExpect(jsonPath("$.id", is(id.toString())));
     }
 
     @Test
@@ -86,8 +107,14 @@ class CategoryApiControllerTest {
         created.setName("Work");
         created.setColor("#FFFFFF");
 
+        CreateCategoryResponse response =
+                new CreateCategoryResponse(id, "Work", "#FFFFFF", null);
+
         when(categoryService.createCategory(any(CreateCategoryRequest.class)))
                 .thenReturn(created);
+
+        when(categoryMapper.mapToCreateCategoryResponse(created))
+                .thenReturn(response);
 
         String json = """
                 {"name":"Work","color":"#FFFFFF"}
@@ -98,7 +125,8 @@ class CategoryApiControllerTest {
                         .content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name", is("Work")))
-                .andExpect(jsonPath("$.color", is("#FFFFFF")));
+                .andExpect(jsonPath("$.color", is("#FFFFFF")))
+                .andExpect(jsonPath("$.id", is(id.toString())));
     }
 
     @Test
@@ -110,8 +138,13 @@ class CategoryApiControllerTest {
         updated.setName("School");
         updated.setColor("#000000");
 
+        GetCategoryResponse response =
+                new GetCategoryResponse(id, "School", "#000000", null);
+
         when(categoryService.updateCategory(any(UUID.class), any(UpdateCategoryRequest.class)))
                 .thenReturn(updated);
+
+        when(categoryMapper.mapToGetCategoryResponse(updated)).thenReturn(response);
 
         String json = """
                 {"name":"School","color":"#000000"}
@@ -122,7 +155,8 @@ class CategoryApiControllerTest {
                         .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("School")))
-                .andExpect(jsonPath("$.color", is("#000000")));
+                .andExpect(jsonPath("$.color", is("#000000")))
+                .andExpect(jsonPath("$.id", is(id.toString())));
     }
 
     @Test

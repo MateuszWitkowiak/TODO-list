@@ -1,7 +1,10 @@
 package com.example.todolist.controller.api;
 
-import com.example.todolist.dto.CreateCategoryRequest;
-import com.example.todolist.dto.UpdateCategoryRequest;
+import com.example.todolist.dto.mapper.CategoryMapper;
+import com.example.todolist.dto.request.CreateCategoryRequest;
+import com.example.todolist.dto.request.UpdateCategoryRequest;
+import com.example.todolist.dto.response.CreateCategoryResponse;
+import com.example.todolist.dto.response.GetCategoryResponse;
 import com.example.todolist.entity.Category;
 import com.example.todolist.service.CategoryService;
 import jakarta.validation.Valid;
@@ -17,31 +20,39 @@ import java.util.UUID;
 public class CategoryApiController {
 
     private final CategoryService categoryService;
+    private final CategoryMapper categoryMapper;
 
-    public CategoryApiController(CategoryService categoryService) {
+    public CategoryApiController(CategoryService categoryService, CategoryMapper categoryMapper) {
         this.categoryService = categoryService;
+        this.categoryMapper = categoryMapper;
     }
 
     @GetMapping
-    public ResponseEntity<List<Category>> getAll() {
-        return ResponseEntity.ok(categoryService.findAllCategories());
+    public ResponseEntity<List<GetCategoryResponse>> getAll() {
+        List<Category> categories = categoryService.findAllCategories();
+        List<GetCategoryResponse> response = categoryMapper.mapToGetCategoryResponse(categories);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Category> getById(@PathVariable("id") UUID id) {
-        return ResponseEntity.ok(categoryService.findCategoryById(id));
+    public ResponseEntity<GetCategoryResponse> getById(@PathVariable("id") UUID id) {
+        Category category = categoryService.findCategoryById(id);
+        GetCategoryResponse response = categoryMapper.mapToGetCategoryResponse(category);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<Category> create(@RequestBody @Valid CreateCategoryRequest dto) {
+    public ResponseEntity<CreateCategoryResponse> create(@RequestBody @Valid CreateCategoryRequest dto) {
         Category created = categoryService.createCategory(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        CreateCategoryResponse response = categoryMapper.mapToCreateCategoryResponse(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> update(@PathVariable("id") UUID id, @RequestBody UpdateCategoryRequest update) {
+    public ResponseEntity<GetCategoryResponse> update(@PathVariable("id") UUID id, @RequestBody UpdateCategoryRequest update) {
         Category updated = categoryService.updateCategory(id, update);
-        return ResponseEntity.ok(updated);
+        GetCategoryResponse response = categoryMapper.mapToGetCategoryResponse(updated);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")

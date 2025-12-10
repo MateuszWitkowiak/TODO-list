@@ -1,7 +1,7 @@
 package com.example.todolist.service;
 
 import com.example.todolist.entity.User;
-import com.example.todolist.dto.RegisterRequest;
+import com.example.todolist.dto.request.RegisterRequest;
 import com.example.todolist.exception.UserAlreadyExistsException;
 import com.example.todolist.repository.UserRepository;
 import org.junit.jupiter.api.Test;

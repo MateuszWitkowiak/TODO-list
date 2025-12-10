@@ -1,15 +1,19 @@
 package com.example.todolist.controller.api;
 
-import com.example.todolist.dto.CreateTaskRequest;
-import com.example.todolist.dto.UpdateTaskRequest;
+import com.example.todolist.dto.mapper.TaskMapper;
+import com.example.todolist.dto.request.CreateTaskRequest;
+import com.example.todolist.dto.request.UpdateTaskRequest;
+import com.example.todolist.dto.response.CreateTaskResponse;
+import com.example.todolist.dto.response.GetTaskResponse;
+import com.example.todolist.entity.Status;
 import com.example.todolist.entity.Task;
 import com.example.todolist.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -28,8 +32,11 @@ class TaskApiControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private TaskService taskService;
+
+    @MockitoBean
+    private TaskMapper taskMapper;
 
     @Test
     void getAllTasks_ShouldReturnList() throws Exception {
@@ -41,7 +48,11 @@ class TaskApiControllerTest {
         t2.setId(UUID.randomUUID());
         t2.setTitle("Test 2");
 
+        GetTaskResponse r1 = new GetTaskResponse(t1.getId(), "Test 1", null, null, null, null, null);
+        GetTaskResponse r2 = new GetTaskResponse(t2.getId(), "Test 2", null, null, null, null, null);
+
         when(taskService.getAllTasks()).thenReturn(List.of(t1, t2));
+        when(taskMapper.mapToGetTaskResponse(List.of(t1, t2))).thenReturn(List.of(r1, r2));
 
         mockMvc.perform(get("/api/v1/tasks"))
                 .andExpect(status().isOk())
@@ -58,7 +69,11 @@ class TaskApiControllerTest {
         task.setId(id);
         task.setTitle("Test");
 
+        GetTaskResponse response =
+                new GetTaskResponse(id, "Test", null, null, null, null, null);
+
         when(taskService.findTaskById(id)).thenReturn(task);
+        when(taskMapper.mapToGetTaskResponse(task)).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/tasks/" + id))
                 .andExpect(status().isOk())
@@ -71,7 +86,10 @@ class TaskApiControllerTest {
         t1.setId(UUID.randomUUID());
         t1.setTitle("Hello world");
 
+        GetTaskResponse r1 = new GetTaskResponse(t1.getId(), "Hello world", null, null, null, null, null);
+
         when(taskService.searchTasksByTitle("Hello", 0, 10)).thenReturn(List.of(t1));
+        when(taskMapper.mapToGetTaskResponse(List.of(t1))).thenReturn(List.of(r1));
 
         mockMvc.perform(get("/api/v1/tasks/search")
                         .param("keyword", "Hello"))
@@ -87,8 +105,11 @@ class TaskApiControllerTest {
         created.setId(id);
         created.setTitle("New task");
 
-        when(taskService.createTask(any(CreateTaskRequest.class)))
-                .thenReturn(created);
+        CreateTaskResponse response =
+                new CreateTaskResponse(id, "New task", null, Status.TODO, null, null, null);
+
+        when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(created);
+        when(taskMapper.mapToCreateTaskResponse(created)).thenReturn(response);
 
         String json = """
             {
@@ -115,8 +136,12 @@ class TaskApiControllerTest {
         updated.setId(id);
         updated.setTitle("Updated");
 
+        GetTaskResponse response =
+                new GetTaskResponse(id, "Updated", null, null, null, null, null);
+
         when(taskService.updateTask(any(UUID.class), any(UpdateTaskRequest.class)))
                 .thenReturn(updated);
+        when(taskMapper.mapToGetTaskResponse(updated)).thenReturn(response);
 
         String json = """
                 {"title":"Updated"}

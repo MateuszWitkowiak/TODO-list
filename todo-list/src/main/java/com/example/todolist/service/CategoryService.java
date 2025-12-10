@@ -1,12 +1,13 @@
 package com.example.todolist.service;
 
-import com.example.todolist.dto.CreateCategoryRequest;
-import com.example.todolist.dto.UpdateCategoryRequest;
+import com.example.todolist.dto.request.CreateCategoryRequest;
+import com.example.todolist.dto.request.UpdateCategoryRequest;
 import com.example.todolist.entity.Category;
 import com.example.todolist.entity.User;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,13 +42,16 @@ public class CategoryService {
     }
 
     @Transactional
-    public Category createCategory(UUID userId, CreateCategoryRequest dto) {
-        User user = userRepository.findById(userId)
+    public Category createCategory(CreateCategoryRequest dto) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
         Category category = new Category();
-        category.setName(dto.name());
-        category.setColor(dto.color());
+        category.setName(dto.getName());
+        category.setColor(dto.getColor());
         category.setUser(user);
+
         return categoryRepository.save(category);
     }
 

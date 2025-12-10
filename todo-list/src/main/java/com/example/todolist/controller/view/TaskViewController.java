@@ -1,7 +1,6 @@
 package com.example.todolist.controller.view;
 
-import com.example.todolist.dto.CreateTaskRequest;
-import com.example.todolist.entity.Task;
+import com.example.todolist.dto.request.CreateTaskRequest;
 import com.example.todolist.service.CategoryService;
 import com.example.todolist.service.TaskService;
 import jakarta.validation.Valid;
@@ -22,31 +21,26 @@ public class TaskViewController {
         this.categoryService = categoryService;
     }
 
-    // GET: formularz dodawania zadania
     @GetMapping("/add")
     public String showAddTaskForm(Model model) {
         model.addAttribute("task", new CreateTaskRequest());
         model.addAttribute("categories", categoryService.findAllCategories());
-        return "task-add"; // plik Thymeleaf task-add.html
+        return "task-add";
     }
 
-    // POST: zapis nowego zadania
-    @PostMapping("/add")
+    @PostMapping
     public String submitNewTask(
             @Valid @ModelAttribute("task") CreateTaskRequest dto,
             BindingResult bindingResult,
             Model model
     ) {
-        // jeśli są błędy walidacji, wracamy do formularza
         if (bindingResult.hasErrors()) {
             model.addAttribute("categories", categoryService.findAllCategories());
             return "task-add";
         }
 
-        // zapis zadania
         taskService.createTask(dto);
 
-        // przekierowanie na listę zadań
         return "redirect:/";
     }
 }

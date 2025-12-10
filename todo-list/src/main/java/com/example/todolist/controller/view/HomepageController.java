@@ -1,6 +1,5 @@
 package com.example.todolist.controller.view;
 
-import com.example.todolist.dto.CreateTaskRequest;
 import com.example.todolist.service.CategoryService;
 import com.example.todolist.service.TaskService;
 import org.springframework.stereotype.Controller;
@@ -11,11 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class HomepageController {
 
     private final TaskService taskService;
-    private final CategoryService categoryService;
 
-    public HomepageController(TaskService taskService, CategoryService categoryService) {
+    public HomepageController(TaskService taskService) {
         this.taskService = taskService;
-        this.categoryService = categoryService;
     }
 
     @GetMapping("/")

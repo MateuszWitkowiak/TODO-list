@@ -1,15 +1,18 @@
 package com.example.todolist.service;
 
-import com.example.todolist.dto.CreateTaskRequest;
-import com.example.todolist.dto.UpdateTaskRequest;
+import com.example.todolist.dto.request.CreateTaskRequest;
+import com.example.todolist.dto.request.UpdateTaskRequest;
 import com.example.todolist.entity.Category;
 import com.example.todolist.entity.Status;
 import com.example.todolist.entity.Task;
+import com.example.todolist.entity.User;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.exception.TaskNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
+import com.example.todolist.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,14 +22,15 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-
 public class TaskService {
     private final TaskRepository taskRepository;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
 
-    public TaskService(TaskRepository taskRepository, CategoryRepository categoryRepository) {
+    public TaskService(TaskRepository taskRepository, CategoryRepository categoryRepository, UserRepository userRepository) {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -76,6 +80,11 @@ public class TaskService {
 
         Category category = categoryRepository.findById(dto.getCategoryId()).orElseThrow(() -> new CategoryNotFoundException("id", dto.getCategoryId()));
         task.setCategory(category);
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        task.setUser(user);
 
         return taskRepository.save(task);
     }

@@ -1,16 +1,22 @@
 package com.example.todolist.service;
 
-import com.example.todolist.dto.CreateCategoryRequest;
-import com.example.todolist.dto.UpdateCategoryRequest;
+import com.example.todolist.dto.request.CreateCategoryRequest;
+import com.example.todolist.dto.request.UpdateCategoryRequest;
 import com.example.todolist.entity.Category;
+import com.example.todolist.entity.User;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
+import com.example.todolist.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +31,9 @@ import static org.mockito.Mockito.when;
 public class CategoryServiceTest {
     @Mock
     private CategoryRepository categoryRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     CategoryService categoryService;
@@ -83,7 +92,19 @@ public class CategoryServiceTest {
 
     @Test
     void createCategory_ShouldMapDtoAndSaveCategory() {
-        CreateCategoryRequest request = new CreateCategoryRequest("Work", "#FFFFFF");
+        // --- given security context ---
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        Authentication auth = new UsernamePasswordAuthenticationToken("test@example.com", null);
+        context.setAuthentication(auth);
+        SecurityContextHolder.setContext(context);
+
+        // --- given user ---
+        User user = new User();
+        user.setEmail("test@example.com");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        CreateCategoryRequest request = new CreateCategoryRequest();
+        request.setName("Work");
+        request.setColor("#FFFFFF");
 
         Category savedEntity = new Category();
         savedEntity.setName("Work");

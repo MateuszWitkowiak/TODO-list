@@ -1,9 +1,9 @@
 package com.example.todolist.controller.api;
 
-import com.example.todolist.dto.CreateTaskRequest;
-import com.example.todolist.dto.CreateTaskResponse;
-import com.example.todolist.dto.GetTaskResponse;
-import com.example.todolist.dto.UpdateTaskRequest;
+import com.example.todolist.dto.request.CreateTaskRequest;
+import com.example.todolist.dto.response.CreateTaskResponse;
+import com.example.todolist.dto.response.GetTaskResponse;
+import com.example.todolist.dto.request.UpdateTaskRequest;
 import com.example.todolist.dto.mapper.TaskMapper;
 import com.example.todolist.entity.Task;
 import com.example.todolist.service.TaskService;

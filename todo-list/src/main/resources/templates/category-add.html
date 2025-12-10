@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pl"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title>Dodaj Kategorię</title>
+</head>
+
+<body>
+<div layout:fragment="content" class="container mt-4">
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="mb-4 text-center">Dodaj nową kategorię</h2>
+
+            <form th:action="@{/categories}" th:object="${category}" method="post" class="card shadow-sm p-4">
+
+                <div class="mb-3">
+                    <label class="form-label">Nazwa kategorii</label>
+                    <input type="text" th:field="*{name}" class="form-control" placeholder="Np. Praca, Dom">
+                    <div class="text-danger" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Kolor (Hex lub nazwa)</label>
+                    <input type="color" th:field="*{color}" class="form-control form-control-color" value="#563d7c" title="Wybierz kolor">
+                    <div class="text-danger" th:if="${#fields.hasErrors('color')}" th:errors="*{color}"></div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary text-white"
+                            style="background: linear-gradient(90deg, #316ff6, #4a8cf4); border: none;">
+                        Zapisz kategorię
+                    </button>
+                    <a th:href="@{/}" class="btn btn-outline-secondary">Anuluj</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

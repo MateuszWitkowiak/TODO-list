@@ -10,7 +10,6 @@
 </head>
 
 <style>
-    /* Delikatna animacja i efekt hover dla linków */
     .nav-link-custom {
         color: rgba(255,255,255,0.9);
         font-size: 1.1rem;
@@ -25,7 +24,6 @@
         color: #fff;
     }
 
-    /* Logout z lekkim czerwonym akcentem */
     .nav-link-logout:hover {
         background: rgba(255, 70, 70, 0.3);
     }
@@ -55,6 +53,11 @@
                    style="border-radius: 8px;"
                    th:href="@{/tasks/add}">
                     + Add Task
+                </a>
+                <a class="btn btn-light px-3 py-1 fw-semibold"
+                   style="border-radius: 8px;"
+                   th:href="@{/categories/add}">
+                    + Add Category
                 </a>
             </div>
 

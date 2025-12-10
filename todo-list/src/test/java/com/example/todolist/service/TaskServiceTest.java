@@ -1,19 +1,25 @@
 package com.example.todolist.service;
 
-import com.example.todolist.dto.UpdateTaskRequest;
-import com.example.todolist.dto.CreateTaskRequest;
+import com.example.todolist.dto.request.UpdateTaskRequest;
+import com.example.todolist.dto.request.CreateTaskRequest;
 import com.example.todolist.entity.Category;
 import com.example.todolist.entity.Status;
 import com.example.todolist.entity.Task;
+import com.example.todolist.entity.User;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
+import com.example.todolist.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +38,9 @@ public class TaskServiceTest {
 
     @Mock
     CategoryRepository categoryRepository;
+
+    @Mock
+    UserRepository userRepository;
 
     @InjectMocks
     TaskService taskService;
@@ -310,11 +319,24 @@ public class TaskServiceTest {
 
     @Test
     void createTask_ShouldCreateTask() {
-        UUID categoryId = UUID.randomUUID();
+        // --- given security context ---
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        Authentication auth = new UsernamePasswordAuthenticationToken("test@example.com", null);
+        context.setAuthentication(auth);
+        SecurityContextHolder.setContext(context);
 
+        // --- given user ---
+        User user = new User();
+        user.setEmail("test@example.com");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+
+        // --- given category ---
+        UUID categoryId = UUID.randomUUID();
         Category category = new Category();
         category.setId(categoryId);
         category.setName("Work");
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
 
         CreateTaskRequest dto = new CreateTaskRequest(
                 "New",
@@ -328,18 +350,18 @@ public class TaskServiceTest {
         savedTask.setId(UUID.randomUUID());
         savedTask.setTitle("New");
         savedTask.setCategory(category);
+        savedTask.setUser(user);
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
         when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
 
+        // --- when ---
         Task result = taskService.createTask(dto);
 
+        // --- then ---
         assertNotNull(result);
         assertEquals("New", result.getTitle());
         assertEquals(category, result.getCategory());
-
-        verify(categoryRepository).findById(categoryId);
-        verify(taskRepository).save(any(Task.class));
+        assertEquals(user, result.getUser());
     }
 
     @Test
