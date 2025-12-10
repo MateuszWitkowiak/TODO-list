@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -99,27 +101,32 @@ class TaskApiControllerTest {
 
     @Test
     void createTask_ShouldReturnCreatedTask() throws Exception {
-        UUID id = UUID.randomUUID();
+        UUID taskId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-        Task created = new Task();
-        created.setId(id);
-        created.setTitle("New task");
+        Task createdTask = new Task();
+        createdTask.setId(taskId);
+        createdTask.setTitle("New task");
 
         CreateTaskResponse response =
-                new CreateTaskResponse(id, "New task", null, Status.TODO, null, null, null);
+                new CreateTaskResponse(taskId, "New task", null, Status.TODO, null, categoryId, userId);
 
-        when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(created);
-        when(taskMapper.mapToCreateTaskResponse(created)).thenReturn(response);
+        when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(createdTask);
+        when(taskMapper.mapToCreateTaskResponse(createdTask)).thenReturn(response);
 
         String json = """
-            {
-              "title": "New task",
-              "description": "some desc",
-              "status": "TODO",
-              "dueDate": "2025-01-01T10:00:00",
-              "categoryId": "7e7c913d-1a4d-402e-a78b-6963bbf87d1d"
-            }
-            """;
+        {
+          "title": "New task",
+          "description": "some desc",
+          "status": "TODO",
+          "dueDate": "2099-01-01T10:00:00",
+          "categoryId": "%s"
+        }
+        """.formatted(categoryId);
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken("test@example.com", null));
 
         mockMvc.perform(post("/api/v1/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -127,6 +134,7 @@ class TaskApiControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title", is("New task")));
     }
+
 
     @Test
     void updateTask_ShouldReturnUpdatedTask() throws Exception {

@@ -11,6 +11,7 @@ import com.example.todolist.exception.TaskNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,11 +27,13 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
 
-    public TaskService(TaskRepository taskRepository, CategoryRepository categoryRepository, UserRepository userRepository) {
+    public TaskService(TaskRepository taskRepository, CategoryRepository categoryRepository, UserRepository userRepository, UserService userService) {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     @Transactional
@@ -40,7 +43,8 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+        User user = userService.getCurrentUser();
+        return taskRepository.findAllByUserId(user.getId());
     }
 
     @Transactional(readOnly = true)
@@ -50,7 +54,10 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<Task> searchTasksByTitle(String keyword, int page, int size) {
-        return taskRepository.searchTasksByTitle(keyword, PageRequest.of(page, size));
+        UUID userId = userService.getCurrentUser().getId();
+        return taskRepository
+                .searchTasksByTitle(userId, keyword, PageRequest.of(page, size))
+                .getContent();
     }
 
     @Transactional
@@ -90,12 +97,13 @@ public class TaskService {
     }
 
     public Map<String, Long> getStats() {
+        UUID userId = userService.getCurrentUser().getId();
         Map<String, Long> stats = new HashMap<>();
 
-        long total = taskRepository.count();
-        long todo = taskRepository.countByStatus(Status.TODO);
-        long inProgress = taskRepository.countByStatus(Status.IN_PROGRESS);
-        long done = taskRepository.countByStatus(Status.DONE);
+        long total = taskRepository.countByUserId(userId);
+        long todo = taskRepository.countByUserIdAndStatus(userId, Status.TODO);
+        long inProgress = taskRepository.countByUserIdAndStatus(userId, Status.IN_PROGRESS);
+        long done = taskRepository.countByUserIdAndStatus(userId, Status.DONE);
 
         stats.put("totalTasks", total);
         stats.put("todoTasks", todo);
@@ -105,8 +113,7 @@ public class TaskService {
         return stats;
     }
 
-    public List<Task> getUpcomingTasks() {
-        return taskRepository.findTop5ByDueDateIsNotNullOrderByDueDateAsc();
+    public Page<Task> getUpcomingTasks() {
+        return taskRepository.findByUserIdAndDueDateIsNotNullOrderByDueDateAsc(userService.getCurrentUser().getId(), PageRequest.of(0, 5));
     }
-
 }

@@ -18,10 +18,12 @@ import java.util.UUID;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final UserService userService;
 
-    public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository) {
+    public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository, UserService userService) {
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     @Transactional
@@ -33,7 +35,7 @@ public class CategoryService {
 
     @Transactional(readOnly = true)
     public List<Category> findAllCategories() {
-        return categoryRepository.findAll();
+        return categoryRepository.findAllByUserId(userService.getCurrentUser().getId());
     }
 
     @Transactional(readOnly = true)
