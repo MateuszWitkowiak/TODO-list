@@ -27,7 +27,7 @@ public class Task {
     @Column(name = "status", nullable = false)
     private Status status;
 
-    @Column(name = "dueDate")
+    @Column(name = "due_date")
     private LocalDateTime dueDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,7 +35,7 @@ public class Task {
     private Category category;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp

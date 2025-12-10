@@ -35,34 +35,45 @@ public class CategoryServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     CategoryService categoryService;
 
     @Test
     void getAllCategories_ShouldReturnAllCategories() {
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setEmail("a@gmail.com");
+        user.setPassword("password");
+        user.setRole("USER");
+
         Category c1 = new Category();
         c1.setId(UUID.randomUUID());
         c1.setName("Work");
+        c1.setUser(user);
 
         Category c2 = new Category();
         c2.setId(UUID.randomUUID());
         c2.setName("Home");
+        c2.setUser(user);
 
         List<Category> categories = List.of(c1, c2);
 
-        when(categoryRepository.findAll()).thenReturn(categories);
-
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(categoryRepository.findAllByUserId(user.getId())).thenReturn(categories);
 
         List<Category> result = categoryService.findAllCategories();
-
 
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals("Work", result.get(0).getName());
         assertEquals("Home", result.get(1).getName());
 
-        verify(categoryRepository).findAll();
+        verify(categoryRepository).findAllByUserId(user.getId());
     }
+
 
     @Test
     void getCategoryById_ShouldReturnCategory() {
