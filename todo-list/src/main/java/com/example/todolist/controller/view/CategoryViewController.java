@@ -2,6 +2,7 @@ package com.example.todolist.controller.view;
 
 import com.example.todolist.dto.request.CreateCategoryRequest;
 import com.example.todolist.service.CategoryService;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class CategoryViewController {
     }
 
     @PostMapping
-    public String createCategory(@ModelAttribute CreateCategoryRequest request) {
+    public String createCategory(@ModelAttribute @Valid CreateCategoryRequest request) {
         categoryService.createCategory(request);
         return "redirect:/";
     }

@@ -7,11 +7,11 @@
     <!-- Welcome Section -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <h2 class="mb-2">Witaj w swoim TodoList!</h2>
-            <p class="text-muted">Zarządzaj zadaniami, planuj i miej wszystko pod kontrolą.</p>
+            <h2 class="mb-2">Welcome to your Task Manager!</h2>
+            <p class="text-muted">Manage tasks, plan and have everything under control.</p>
 
             <a class="btn btn-primary" th:href="@{/tasks}">
-                Przejdź do listy zadań
+                Go to your task list
             </a>
         </div>
     </div>
@@ -22,7 +22,7 @@
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h4 th:text="${stats.totalTasks}">0</h4>
-                    <p class="text-muted">Wszystkich zadań</p>
+                    <p class="text-muted">All Tasks</p>
                 </div>
             </div>
         </div>
@@ -31,7 +31,7 @@
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h4 th:text="${stats.doneTasks}">0</h4>
-                    <p class="text-muted">Ukończonych</p>
+                    <p class="text-muted">Finished</p>
                 </div>
             </div>
         </div>
@@ -40,7 +40,7 @@
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h4 th:text="${stats.todoTasks}">0</h4>
-                    <p class="text-muted">Do zrobienia</p>
+                    <p class="text-muted">To do</p>
                 </div>
             </div>
         </div>

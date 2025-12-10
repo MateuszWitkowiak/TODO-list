@@ -49,6 +49,10 @@ public class CategoryService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        if (categoryRepository.existsCategoriesByNameAndUserId(dto.getName(), userService.getCurrentUser().getId())) {
+            throw new IllegalArgumentException("Category already exists");
+        }
+
         Category category = new Category();
         category.setName(dto.getName());
         category.setColor(dto.getColor());

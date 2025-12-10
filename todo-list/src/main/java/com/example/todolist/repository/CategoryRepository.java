@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
     List<Category> findAllByUserId(UUID userId);
+    boolean existsCategoriesByNameAndUserId(String name, UUID userId);
 }
