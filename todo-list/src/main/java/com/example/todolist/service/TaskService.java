@@ -64,12 +64,12 @@ public class TaskService {
     public Task updateTask(UUID taskId, UpdateTaskRequest dto) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new TaskNotFoundException("id", taskId));
 
-        task.setTitle(dto.title());
-        if (dto.description() != null) task.setDescription(dto.description());
-        if (dto.status() != null) task.setStatus(dto.status());
-        if (dto.dueDate() != null) task.setDueDate(dto.dueDate());
-        if (dto.categoryId() != null) {
-            Category category = categoryRepository.findById(dto.categoryId()).orElseThrow(() -> new CategoryNotFoundException("id", dto.categoryId()));
+        task.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) task.setDescription(dto.getDescription());
+        if (dto.getStatus() != null) task.setStatus(dto.getStatus());
+        if (dto.getDueDate() != null) task.setDueDate(dto.getDueDate());
+        if (dto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(dto.getCategoryId()).orElseThrow(() -> new CategoryNotFoundException("id", dto.getCategoryId()));
             task.setCategory(category);
         }
 

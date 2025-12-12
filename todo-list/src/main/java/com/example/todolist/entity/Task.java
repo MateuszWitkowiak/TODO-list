@@ -25,6 +25,7 @@ public class Task {
     private String description;
 
     @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
     private Status status;
 
     @Column(name = "due_date")

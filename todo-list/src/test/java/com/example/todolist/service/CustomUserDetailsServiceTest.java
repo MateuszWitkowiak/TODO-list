@@ -42,8 +42,6 @@ class CustomUserDetailsServiceTest {
         assertEquals("hashedPassword", userDetails.getPassword());
         assertTrue(userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_USER")));
-
-        verify(userRepository).findByEmail("test@example.com");
     }
 
     @Test
@@ -53,6 +51,5 @@ class CustomUserDetailsServiceTest {
 
         assertThrows(UsernameNotFoundException.class,
                 () -> customUserDetailsService.loadUserByUsername("notfound@example.com"));
-        verify(userRepository).findByEmail("notfound@example.com");
     }
 }

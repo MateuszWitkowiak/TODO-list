@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/categories")
 public class CategoryViewController {
     private final CategoryService categoryService;
+    private final String API_URL = "http://localhost:8080/api/v1/categories";
 
     public CategoryViewController(CategoryService categoryService) {
         this.categoryService = categoryService;

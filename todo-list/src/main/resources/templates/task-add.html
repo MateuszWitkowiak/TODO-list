@@ -5,15 +5,15 @@
       layout:decorate="~{layout}">
 
 <head>
-    <title>Dodaj zadanie</title>
+    <title>Add new Task</title>
 </head>
 
 <body>
 <div layout:fragment="content" class="container mt-4">
 
-    <h2 class="mb-4">Add new task</h2>
+    <h2 class="mb-4" th:text="${isEdit} ? 'Edit task' : 'Add new task'"></h2>
 
-    <form th:action="@{/tasks}" th:object="${task}" method="post" class="card shadow-sm p-4">
+    <form th:action="${isEdit} ? @{/tasks/edit/{id}(id=${taskId})} : @{/tasks/add}" th:object="${task}" method="post" class="card shadow-sm p-4">
 
         <div class="mb-3">
             <label class="form-label">Title *</label>
@@ -56,7 +56,9 @@
 
         <div class="d-flex justify-content-between mt-4">
             <a class="btn btn-secondary" th:href="@{/}">Cancel</a>
-            <button type="submit" class="btn btn-primary">Add Task</button>
+            <button type="submit" class="btn btn-primary"
+                    th:text="${isEdit} ? 'Update task' : 'Add task'">
+            </button>
         </div>
 
     </form>
