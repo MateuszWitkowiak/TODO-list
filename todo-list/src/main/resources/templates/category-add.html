@@ -9,13 +9,13 @@
 </head>
 
 <body>
-<div layout:fragment="content" class="container mt-4">
+<div layout:fragment="content" class="container mt-4 content-wrapper">
 
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <h2 class="mb-4 text-center">Add new category</h2>
+            <h2 class="mb-4" th:text="${isEdit} ? 'Edit category' : 'Add new category'"></h2>
 
-            <form th:action="@{/categories}" th:object="${category}" method="post" class="card shadow-sm p-4">
+            <form th:action="${isEdit} ? @{/categories/edit/{categoryId}(categoryId=${categoryId})} : @{/categories}" th:object="${category}" method="post" class="card shadow-sm p-4">
 
                 <div class="mb-3">
                     <label class="form-label">Category name</label>
@@ -31,8 +31,7 @@
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary text-white"
-                            style="background: linear-gradient(90deg, #316ff6, #4a8cf4); border: none;">
-                        Save category
+                            style="background: linear-gradient(90deg, #316ff6, #4a8cf4); border: none;" th:text="${isEdit} ? 'Update category' : 'Add category'">>
                     </button>
                     <a th:href="@{/}" class="btn btn-outline-secondary">Cancel</a>
                 </div>

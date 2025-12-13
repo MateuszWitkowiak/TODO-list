@@ -2,15 +2,18 @@ package com.example.todolist.controller.view;
 
 import com.example.todolist.dto.request.CreateTaskRequest;
 import com.example.todolist.dto.request.UpdateTaskRequest;
+import com.example.todolist.entity.Category;
 import com.example.todolist.entity.Task;
 import com.example.todolist.service.CategoryService;
 import com.example.todolist.service.TaskService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,17 +57,35 @@ public class TaskViewController {
     public String showTasks(
             @RequestParam(name = "sort", defaultValue = "title") String sort,
             @RequestParam(name = "direction", defaultValue = "asc") String direction,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "categoryId", required = false) UUID categoryId,
+            @RequestParam(name = "dueAfter", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueAfter,
+            @RequestParam(name = "dueBefore", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueBefore,
             Model model
     ) {
-        List<Task> tasks = taskService.getAllTasks(sort, direction);
+        List<Task> tasks = taskService.getAllTasks(sort, direction, status, categoryId, dueAfter, dueBefore);
+        List<Category> categories = categoryService.findAllCategories();
 
         model.addAttribute("tasks", tasks);
         model.addAttribute("currentSort", sort);
         model.addAttribute("currentDirection", direction.toLowerCase());
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("selectedCategory", categoryId);
+        model.addAttribute("categories", categories);
+
+        model.addAttribute("dueAfter", dueAfter);
+        model.addAttribute("dueBefore", dueBefore);
 
         return "tasks";
     }
+    @GetMapping("/tasksByTitle")
+    public String showTasksByTitle(@RequestParam(name = "title", required = false) String title, Model model){
+        List<Task> tasks = taskService.searchTasksByTitle(title, 0, 50);
+        model.addAttribute("tasks", tasks);
+        model.addAttribute("searchTitle", title);
 
+        return "tasks";
+    }
     @GetMapping("/edit/{id}")
     public String showEditTaskForm(@PathVariable UUID id, Model model) {
         Task task = taskService.findTaskById(id);

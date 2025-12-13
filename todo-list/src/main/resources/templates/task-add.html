@@ -9,11 +9,11 @@
 </head>
 
 <body>
-<div layout:fragment="content" class="container mt-4">
+<div layout:fragment="content" class="container mt-4 content-wrapper">
 
     <h2 class="mb-4" th:text="${isEdit} ? 'Edit task' : 'Add new task'"></h2>
 
-    <form th:action="${isEdit} ? @{/tasks/edit/{id}(id=${taskId})} : @{/tasks/add}" th:object="${task}" method="post" class="card shadow-sm p-4">
+    <form th:action="${isEdit} ? @{/tasks/edit/{id}(id=${taskId})} : @{/tasks}" th:object="${task}" method="post" class="card shadow-sm p-4">
 
         <div class="mb-3">
             <label class="form-label">Title *</label>

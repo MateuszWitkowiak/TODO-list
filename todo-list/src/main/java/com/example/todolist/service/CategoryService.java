@@ -13,7 +13,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Collator;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -43,6 +46,26 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public List<Category> findAllCategories() {
         return categoryRepository.findAllByUserId(userService.getCurrentUser().getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<Category> findAllCategories(String sort, String direction) {
+        UUID userId = userService.getCurrentUser().getId();
+
+        List<Category> categories = categoryRepository.findAllByUserId(userId);
+
+        Collator polishCollator = Collator.getInstance(new Locale("pl", "PL"));
+        polishCollator.setStrength(Collator.PRIMARY);
+
+        Comparator<Category> comparator =
+                Comparator.comparing(Category::getName, Comparator.nullsLast(polishCollator));
+
+        if ("desc".equalsIgnoreCase(direction)) {
+            comparator = comparator.reversed();
+        }
+
+        categories.sort(comparator);
+        return categories;
     }
 
     @Transactional(readOnly = true)
