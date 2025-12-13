@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>Tasks</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1>Here will be all tasks :)</h1>
+
+    <form th:action="@{/tasks}" method="get" class="mb-3 d-flex align-items-center content-wrapper" style="gap:8px;">
+        <input type="hidden" name="sort" th:value="${currentSort}">
+        <input type="hidden" name="direction" th:value="${currentDirection}">
+        <label class="me-2 mb-0 fw-bold">Status:</label>
+        <select name="status" class="form-select me-2" style="width: auto;">
+            <option value="" th:selected="${selectedStatus == null or selectedStatus == ''}">All</option>
+            <option th:value="'TODO'" th:selected="${selectedStatus == 'TODO'}">To do</option>
+            <option th:value="'IN_PROGRESS'" th:selected="${selectedStatus == 'IN_PROGRESS'}">In progress</option>
+            <option th:value="'DONE'" th:selected="${selectedStatus == 'DONE'}">Done</option>
+        </select>
+
+        <label class="me-2 mb-0 fw-bold">Category:</label>
+        <select name="categoryId" class="form-select me-2" style="width: auto;">
+            <option value="" th:selected="${selectedCategory == null or selectedCategory == ''}">All</option>
+            <option th:each="cat : ${categories}"
+                    th:value="${cat.id}"
+                    th:text="${cat.name}"
+                    th:selected="${selectedCategory != null and selectedCategory == cat.id}">
+            </option>
+        </select>
+
+        <label class="me-2 mb-0 fw-bold">Due after:</label>
+        <input type="date" name="dueAfter" class="form-control me-2" style="width:160px;"
+               th:value="${dueAfter}"/>
+
+        <label class="me-2 mb-0 fw-bold">Due before:</label>
+        <input type="date" name="dueBefore" class="form-control me-2" style="width:160px;"
+               th:value="${dueBefore}"/>
+
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+    <form th:action="@{/tasks/tasksByTitle}" method="get" class="align-items-center mb-3">
+        <input type="text" name="title" class="form-control" placeholder="Search by title..." th:value="${searchTitle}">
+    </form>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>
+                <a th:with="nextDir=${currentSort == 'title' and currentDirection == 'asc' ? 'desc' : 'asc'}"
+                   th:href="@{/tasks(sort='title', direction=${nextDir}, status=${selectedStatus})}">
+                    Title
+                    <span th:if="${currentSort == 'title'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:with="nextDir=${currentSort == 'description' and currentDirection == 'asc' ? 'desc' : 'asc'}"
+                   th:href="@{/tasks(sort='description', direction=${nextDir}, status=${selectedStatus})}">
+                    Description
+                    <span th:if="${currentSort == 'description'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:with="nextDir=${currentSort == 'category.name' and currentDirection == 'asc' ? 'desc' : 'asc'}"
+                   th:href="@{/tasks(sort='category.name', direction=${nextDir}, status=${selectedStatus})}">
+                    Category
+                    <span th:if="${currentSort == 'category.name'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:with="nextDir=${currentSort == 'dueDate' and currentDirection == 'asc' ? 'desc' : 'asc'}"
+                   th:href="@{/tasks(sort='dueDate', direction=${nextDir}, status=${selectedStatus})}">
+                    Due date
+                    <span th:if="${currentSort == 'dueDate'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:with="nextDir=${currentSort == 'status' and currentDirection == 'asc' ? 'desc' : 'asc'}"
+                   th:href="@{/tasks(sort='status', direction=${nextDir}, status=${selectedStatus})}">
+                    Status
+                    <span th:if="${currentSort == 'status'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>Action</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="task : ${tasks}">
+            <td th:text="${task.title}"></td>
+            <td th:text="${task.description}"></td>
+
+            <td>
+                <span th:if="${task.category != null and task.category.color != null}"
+                      th:style="'display:inline-block;padding:4px 10px;border-radius:6px;color:#fff;font-weight:500;background-color:' + ${task.category.color}"
+                      th:text="${task.category.name}"></span>
+                <span th:if="${task.category != null and task.category.color == null}"
+                      th:text="${task.category.name}"></span>
+                <span th:if="${task.category == null}" th:text="'Brak'"></span>
+            </td>
+
+            <td th:text="${#temporals.format(task.dueDate, 'dd.MM.yyyy')}"></td>
+            <td th:text="${task.status}"></td>
+            <td>
+                <a th:href="@{/tasks/edit/{id}(id=${task.id})}" class="btn btn-warning btn-sm">Edit</a>
+            </td>
+            <td>
+                <a th:href="@{/tasks/{id}/delete(id=${task.id})}"
+                   class="btn btn-danger btn-sm">
+                    Delete
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p th:if="${#lists.isEmpty(tasks)}">No tasks found.</p>
+</div>
+</body>
+</html>

@@ -31,5 +31,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     long countByUserId(UUID userId);
 
     long countByUserIdAndStatus(UUID userId, Status status);
+
+    List<Task> findAllByCategoryId(UUID categoryId);
+
 }
 

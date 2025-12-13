@@ -3,15 +3,20 @@ package com.example.todolist.service;
 import com.example.todolist.dto.request.CreateCategoryRequest;
 import com.example.todolist.dto.request.UpdateCategoryRequest;
 import com.example.todolist.entity.Category;
+import com.example.todolist.entity.Task;
 import com.example.todolist.entity.User;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
+import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Collator;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -19,23 +24,48 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final TaskRepository taskRepository;
 
-    public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository, UserService userService) {
+    public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository, UserService userService, TaskRepository taskRepository) {
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.userService = userService;
+        this.taskRepository = taskRepository;
     }
 
     @Transactional
     public void deleteCategoryById(UUID categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("id", categoryId));
+
+        List<Task> tasksWithDeletedCategory = taskRepository.findAllByCategoryId(categoryId);
+        tasksWithDeletedCategory.forEach(task -> task.setCategory(null));
         categoryRepository.delete(category);
     }
 
     @Transactional(readOnly = true)
     public List<Category> findAllCategories() {
         return categoryRepository.findAllByUserId(userService.getCurrentUser().getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<Category> findAllCategories(String sort, String direction) {
+        UUID userId = userService.getCurrentUser().getId();
+
+        List<Category> categories = categoryRepository.findAllByUserId(userId);
+
+        Collator polishCollator = Collator.getInstance(new Locale("pl", "PL"));
+        polishCollator.setStrength(Collator.PRIMARY);
+
+        Comparator<Category> comparator =
+                Comparator.comparing(Category::getName, Comparator.nullsLast(polishCollator));
+
+        if ("desc".equalsIgnoreCase(direction)) {
+            comparator = comparator.reversed();
+        }
+
+        categories.sort(comparator);
+        return categories;
     }
 
     @Transactional(readOnly = true)

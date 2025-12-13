@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pl"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Categories</title>
+</head>
+<body>
+<div layout:fragment="content" class="d-flex flex-column align-items-center content-wrapper">
+    <h1 class="text-center mb-4">Here will be all categories</h1>
+
+    <table class="table align-middle" style="width:50%; max-width:800px;">
+        <thead>
+        <tr>
+            <th style="width: auto;">
+                <a th:href="@{/categories(sort='name', direction=${currentSort == 'name' and currentDirection == 'asc' ? 'desc' : 'asc'})}">
+                    Name
+                    <span th:if="${currentSort == 'name'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+            <th style="width: 20%;"></th>
+            <th class="text-end" style="width: 140px; white-space: nowrap;">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="category : ${categories}"
+            th:style="${category.color} != null ? 'background-color:' + category.color + '20;' : ''">
+            <td>
+                <span th:if="${category.color != null}"
+                      th:style="'display:inline-block;padding:4px 10px;border-radius:999px;color:#fff;font-weight:500;background-color:' + ${category.color}">
+                    <span th:text="${category.name}"></span>
+                </span>
+                <span th:if="${category.color == null}"
+                      th:text="${category.name}"></span>
+            </td>
+
+            <td></td>
+
+            <td class="text-end" style="vertical-align: middle;">
+                <a th:href="@{/categories/edit/{id}(id=${category.id})}"
+                   class="btn btn-warning btn-sm me-1">Edit</a>
+                <a th:href="@{/categories/{id}/delete(id=${category.id})}"
+                   class="btn btn-danger btn-sm">Delete</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p th:if="${#lists.isEmpty(categories)}">No categories found. Create your first one!</p>
+</div>
+</body>
+</html>

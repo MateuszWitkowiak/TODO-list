@@ -21,223 +21,284 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class TaskServiceTest {
+class TaskServiceTest {
 
-    @Mock
-    TaskRepository taskRepository;
+    @Mock TaskRepository taskRepository;
+    @Mock CategoryRepository categoryRepository;
+    @Mock UserRepository userRepository;
+    @Mock UserService userService;
 
-    @Mock
-    CategoryRepository categoryRepository;
-
-    @Mock
-    UserRepository userRepository;
-
-    @Mock
-    UserService userService;
-
-    @InjectMocks
-    TaskService taskService;
+    @InjectMocks TaskService taskService;
 
     User mockUser;
+    UUID userId;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         mockUser = new User();
-        mockUser.setId(UUID.randomUUID());
+        userId = UUID.randomUUID();
+        mockUser.setId(userId);
     }
 
-    @Test
-    void getAllTasks_ShouldReturnTasksForUser() {
-        when(userService.getCurrentUser()).thenReturn(mockUser);
-        Task t1 = new Task();
-        Task t2 = new Task();
+    private Task createTask(UUID id) {
+        Task t = new Task();
+        t.setId(id);
+        t.setUser(mockUser);
+        return t;
+    }
 
-        when(taskRepository.findAllByUserId(mockUser.getId()))
-                .thenReturn(List.of(t1, t2));
+    private Category createCategory(UUID id) {
+        Category c = new Category();
+        c.setId(id);
+        return c;
+    }
+
+    // ------------------------------
+    // getAllTasks
+    // ------------------------------
+
+    @Test
+    void getAllTasks_ShouldReturnAllTasksOfUser() {
+        List<Task> tasks = List.of(new Task(), new Task());
+        when(taskRepository.findAllByUserId(userId)).thenReturn(tasks);
+        when(userService.getCurrentUser()).thenReturn(mockUser);
 
         List<Task> result = taskService.getAllTasks();
 
         assertEquals(2, result.size());
-        verify(taskRepository).findAllByUserId(mockUser.getId());
+        verify(taskRepository).findAllByUserId(userId);
     }
 
+    // ------------------------------
+    // findTaskById
+    // ------------------------------
+
     @Test
-    void getTaskById_ShouldReturnTask() {
+    void findTaskById_ShouldReturnTask_WhenExists() {
         UUID id = UUID.randomUUID();
-        Task task = new Task();
-        task.setId(id);
+        Task task = createTask(id);
 
         when(taskRepository.findById(id)).thenReturn(Optional.of(task));
 
         Task result = taskService.findTaskById(id);
 
-        assertNotNull(result);
         assertEquals(id, result.getId());
     }
 
     @Test
-    void getTaskById_ShouldThrowExceptionWhenNotFound() {
+    void findTaskById_ShouldThrow_WhenNotFound() {
         UUID id = UUID.randomUUID();
         when(taskRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(TaskNotFoundException.class, () -> taskService.findTaskById(id));
     }
 
+    // ------------------------------
+    // searchTasksByTitle
+    // ------------------------------
+
     @Test
     void searchTasksByTitle_ShouldReturnFilteredTasks() {
-        when(userService.getCurrentUser()).thenReturn(mockUser);
-        String keyword = "test";
+        String keyword = "abc";
         PageRequest page = PageRequest.of(0, 5);
-
         Task task = new Task();
-        Page<Task> pageResult = new PageImpl<>(List.of(task));
-
-        when(taskRepository.searchTasksByTitle(mockUser.getId(), keyword, page))
-                .thenReturn(pageResult);
+        Page<Task> mockPage = new PageImpl<>(List.of(task));
+        when(userService.getCurrentUser()).thenReturn(mockUser);
+        when(taskRepository.searchTasksByTitle(userId, keyword, page))
+                .thenReturn(mockPage);
 
         List<Task> result = taskService.searchTasksByTitle(keyword, 0, 5);
 
         assertEquals(1, result.size());
-        verify(taskRepository).searchTasksByTitle(mockUser.getId(), keyword, page);
+        verify(taskRepository).searchTasksByTitle(userId, keyword, page);
     }
+
+    // ------------------------------
+    // deleteTaskById
+    // ------------------------------
 
     @Test
     void deleteTaskById_ShouldCallRepository() {
-        UUID id = UUID.randomUUID();
+        UUID taskId = UUID.randomUUID();
 
-        taskService.deleteTaskById(id);
+        taskService.deleteTaskById(taskId);
 
-        verify(taskRepository).deleteById(id);
+        verify(taskRepository, times(1)).deleteById(taskId);
     }
 
+    // ------------------------------
+    // updateTask
+    // ------------------------------
+
     @Test
-    void updateTask_ShouldUpdateFields() {
+    void updateTask_ShouldUpdateAllProvidedFields() {
         UUID taskId = UUID.randomUUID();
-        UUID categoryId = UUID.randomUUID();
+        UUID catId = UUID.randomUUID();
 
-        Task task = new Task();
-        task.setId(taskId);
-
-        Category category = new Category();
-        category.setId(categoryId);
+        Task task = createTask(taskId);
+        Category category = createCategory(catId);
 
         UpdateTaskRequest dto = new UpdateTaskRequest(
-                "new",
-                "desc",
+                "newTitle",
+                "newDesc",
                 Status.IN_PROGRESS,
                 LocalDateTime.now(),
-                categoryId
+                catId
         );
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
-        when(taskRepository.save(task)).thenReturn(task);
+        when(categoryRepository.findById(catId)).thenReturn(Optional.of(category));
+        when(taskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Task result = taskService.updateTask(taskId, dto);
 
-        assertEquals("new", result.getTitle());
-        assertEquals("desc", result.getDescription());
+        assertEquals("newTitle", result.getTitle());
+        assertEquals("newDesc", result.getDescription());
         assertEquals(Status.IN_PROGRESS, result.getStatus());
         assertEquals(category, result.getCategory());
     }
 
     @Test
-    void updateTask_ShouldThrowWhenTaskNotFound() {
-        UUID id = UUID.randomUUID();
+    void updateTask_ShouldKeepOldValues_WhenFieldsAreNull() {
+        UUID taskId = UUID.randomUUID();
+        Task task = createTask(taskId);
 
-        when(taskRepository.findById(id)).thenReturn(Optional.empty());
+        task.setTitle("old");
+        task.setDescription("oldDesc");
+        task.setStatus(Status.TODO);
 
-        UpdateTaskRequest dto = new UpdateTaskRequest("a", null, null, null, null);
+        UpdateTaskRequest dto = new UpdateTaskRequest(
+                "new",   // title zmieniamy
+                null,    // description zostaje
+                null,    // status zostaje
+                null,    // due date zostaje
+                null     // category zostaje
+        );
 
-        assertThrows(TaskNotFoundException.class,
-                () -> taskService.updateTask(id, dto));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(taskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Task result = taskService.updateTask(taskId, dto);
+
+        assertEquals("new", result.getTitle());
+        assertEquals("oldDesc", result.getDescription());
+        assertEquals(Status.TODO, result.getStatus());
     }
 
     @Test
-    void updateTask_ShouldThrowWhenCategoryNotFound() {
+    void updateTask_ShouldThrowWhenTaskNotFound() {
         UUID taskId = UUID.randomUUID();
-        UUID categoryId = UUID.randomUUID();
+        UpdateTaskRequest dto = new UpdateTaskRequest("a", null, null, null, null);
 
-        Task task = new Task();
-        task.setId(taskId);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
-        UpdateTaskRequest dto = new UpdateTaskRequest("a", null, null, null, categoryId);
+        assertThrows(TaskNotFoundException.class, () -> taskService.updateTask(taskId, dto));
+    }
+
+    @Test
+    void updateTask_ShouldThrowWhenCategoryNotExists() {
+        UUID taskId = UUID.randomUUID();
+        UUID catId = UUID.randomUUID();
+
+        Task task = createTask(taskId);
+        UpdateTaskRequest dto = new UpdateTaskRequest("a", null, null, null, catId);
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.empty());
+        when(categoryRepository.findById(catId)).thenReturn(Optional.empty());
 
         assertThrows(CategoryNotFoundException.class,
                 () -> taskService.updateTask(taskId, dto));
     }
 
+    // ------------------------------
+    // createTask
+    // ------------------------------
+
     @Test
-    void createTask_ShouldCreateTask() {
-        // security context
-        SecurityContext ctx = SecurityContextHolder.createEmptyContext();
-        Authentication auth = new UsernamePasswordAuthenticationToken("email@test.com", null);
-        ctx.setAuthentication(auth);
-        SecurityContextHolder.setContext(ctx);
-
-        // user
-        User user = new User();
-        user.setEmail("email@test.com");
-
-        when(userRepository.findByEmail("email@test.com")).thenReturn(Optional.of(user));
-
-        // category
-        UUID categoryId = UUID.randomUUID();
-        Category category = new Category();
-        category.setId(categoryId);
-
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
-
-        CreateTaskRequest dto = new CreateTaskRequest(
-                "title",
-                "desc",
-                Status.TODO,
-                LocalDateTime.now(),
-                categoryId
+    void createTask_ShouldCreateTaskProperly() {
+        // given security context
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("user@mail.com", null)
         );
 
-        Task saved = new Task();
-        saved.setId(UUID.randomUUID());
-        saved.setCategory(category);
-        saved.setUser(user);
+        User user = new User();
+        user.setEmail("user@mail.com");
 
-        when(taskRepository.save(any(Task.class))).thenReturn(saved);
+        UUID catId = UUID.randomUUID();
+        Category category = createCategory(catId);
+
+        CreateTaskRequest dto = new CreateTaskRequest(
+                "title", "desc", Status.TODO, LocalDateTime.now(), catId
+        );
+
+        when(categoryRepository.findById(catId)).thenReturn(Optional.of(category));
+        when(userRepository.findByEmail("user@mail.com")).thenReturn(Optional.of(user));
+        when(taskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Task result = taskService.createTask(dto);
 
-        assertNotNull(result);
-        assertEquals(category, result.getCategory());
+        assertEquals("title", result.getTitle());
+        assertEquals("desc", result.getDescription());
         assertEquals(user, result.getUser());
+        assertEquals(category, result.getCategory());
     }
 
     @Test
-    void createTask_ShouldThrowWhenCategoryMissing() {
-        UUID categoryId = UUID.randomUUID();
+    void createTask_ShouldThrow_WhenCategoryNotFound() {
+        UUID catId = UUID.randomUUID();
 
         CreateTaskRequest dto = new CreateTaskRequest(
-                "x", "y", Status.TODO, LocalDateTime.now(), categoryId
+                "x", "y", Status.TODO, LocalDateTime.now(), catId
         );
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.empty());
+        when(categoryRepository.findById(catId)).thenReturn(Optional.empty());
 
-        assertThrows(CategoryNotFoundException.class,
-                () -> taskService.createTask(dto));
+        assertThrows(CategoryNotFoundException.class, () -> taskService.createTask(dto));
+    }
+
+    // ------------------------------
+    // getStats
+    // ------------------------------
+
+    @Test
+    void getStats_ShouldReturnCounts() {
+        when(taskRepository.countByUserId(userId)).thenReturn(10L);
+        when(taskRepository.countByUserIdAndStatus(userId, Status.TODO)).thenReturn(4L);
+        when(taskRepository.countByUserIdAndStatus(userId, Status.IN_PROGRESS)).thenReturn(3L);
+        when(taskRepository.countByUserIdAndStatus(userId, Status.DONE)).thenReturn(3L);
+        when(userService.getCurrentUser()).thenReturn(mockUser);
+
+        Map<String, Long> stats = taskService.getStats();
+
+        assertEquals(10L, stats.get("totalTasks"));
+        assertEquals(4L, stats.get("todoTasks"));
+        assertEquals(3L, stats.get("inProgressTasks"));
+        assertEquals(3L, stats.get("doneTasks"));
+    }
+
+    // ------------------------------
+    // getUpcomingTasks
+    // ------------------------------
+
+    @Test
+    void getUpcomingTasks_ShouldReturnPage() {
+        Page<Task> page = new PageImpl<>(List.of(new Task()));
+        when(userService.getCurrentUser()).thenReturn(mockUser);
+        when(taskRepository.findByUserIdAndDueDateIsNotNullOrderByDueDateAsc(eq(userId), any()))
+                .thenReturn(page);
+
+        Page<Task> result = taskService.getUpcomingTasks();
+
+        assertEquals(1, result.getContent().size());
     }
 }
