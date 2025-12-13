@@ -32,7 +32,7 @@ public class Task {
     private LocalDateTime dueDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id")
     private Category category;
 
     @CreationTimestamp

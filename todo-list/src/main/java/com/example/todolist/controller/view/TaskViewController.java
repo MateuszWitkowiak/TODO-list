@@ -2,6 +2,7 @@ package com.example.todolist.controller.view;
 
 import com.example.todolist.dto.request.CreateTaskRequest;
 import com.example.todolist.dto.request.UpdateTaskRequest;
+import com.example.todolist.entity.Task;
 import com.example.todolist.service.CategoryService;
 import com.example.todolist.service.TaskService;
 import jakarta.validation.Valid;
@@ -9,8 +10,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -19,14 +20,10 @@ public class TaskViewController {
 
     private final TaskService taskService;
     private final CategoryService categoryService;
-    private final RestTemplate restTemplate;
 
-    private final String API_URL = "http://localhost:8080/api/v1/tasks";
-
-    public TaskViewController(RestTemplate restTemplate, TaskService taskService, CategoryService categoryService) {
+    public TaskViewController(TaskService taskService, CategoryService categoryService) {
         this.taskService = taskService;
         this.categoryService = categoryService;
-        this.restTemplate = restTemplate;
     }
 
     @GetMapping("/add")
@@ -45,30 +42,41 @@ public class TaskViewController {
     ) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("categories", categoryService.findAllCategories());
+            model.addAttribute("isEdit", false);
             return "task-add";
         }
 
         taskService.createTask(dto);
-
         return "redirect:/tasks";
     }
 
     @GetMapping
-    public String showTasks(Model model) {
-        model.addAttribute("tasks", taskService.getAllTasks());
+    public String showTasks(
+            @RequestParam(name = "sort", defaultValue = "title") String sort,
+            @RequestParam(name = "direction", defaultValue = "asc") String direction,
+            Model model
+    ) {
+        List<Task> tasks = taskService.getAllTasks(sort, direction);
+
+        model.addAttribute("tasks", tasks);
+        model.addAttribute("currentSort", sort);
+        model.addAttribute("currentDirection", direction.toLowerCase());
+
         return "tasks";
     }
 
     @GetMapping("/edit/{id}")
     public String showEditTaskForm(@PathVariable UUID id, Model model) {
-        var task = taskService.findTaskById(id);
+        Task task = taskService.findTaskById(id);
 
         UpdateTaskRequest updateRequest = new UpdateTaskRequest();
         updateRequest.setTitle(task.getTitle());
         updateRequest.setDescription(task.getDescription());
         updateRequest.setStatus(task.getStatus());
         updateRequest.setDueDate(task.getDueDate());
-        updateRequest.setCategoryId(task.getCategory().getId());
+        if (task.getCategory() != null) {
+            updateRequest.setCategoryId(task.getCategory().getId());
+        }
 
         model.addAttribute("task", updateRequest);
         model.addAttribute("categories", categoryService.findAllCategories());

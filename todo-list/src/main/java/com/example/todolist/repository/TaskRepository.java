@@ -3,6 +3,7 @@ package com.example.todolist.repository;
 import com.example.todolist.entity.Status;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -31,5 +32,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     long countByUserId(UUID userId);
 
     long countByUserIdAndStatus(UUID userId, Status status);
+
+    List<Task> findAllByUserId(UUID userId, Sort sort);
+
+    List<Task> findAllByCategoryId(UUID categoryId);
 }
 

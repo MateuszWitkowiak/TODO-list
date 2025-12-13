@@ -13,12 +13,48 @@
     <table class="table">
         <thead>
         <tr>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Due date</th>
-            <th>Status</th>
+            <th>
+                <a th:href="@{/tasks(sort='title', direction=${currentSort == 'title' and currentDirection == 'asc' ? 'desc' : 'asc'})}">
+                    Title
+                    <span th:if="${currentSort == 'title'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:href="@{/tasks(sort='description', direction=${currentSort == 'description' and currentDirection == 'asc' ? 'desc' : 'asc'})}">
+                    Description
+                    <span th:if="${currentSort == 'description'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:href="@{/tasks(sort='category.name', direction=${currentSort == 'category.name' and currentDirection == 'asc' ? 'desc' : 'asc'})}">
+                    Category
+                    <span th:if="${currentSort == 'category.name'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:href="@{/tasks(sort='dueDate', direction=${currentSort == 'dueDate' and currentDirection == 'asc' ? 'desc' : 'asc'})}">
+                    Due date
+                    <span th:if="${currentSort == 'dueDate'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
+            <th>
+                <a th:href="@{/tasks(sort='status', direction=${currentSort == 'status' and currentDirection == 'asc' ? 'desc' : 'asc'})}">
+                    Status
+                    <span th:if="${currentSort == 'status'}"
+                          th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
+                </a>
+            </th>
+
             <th>Action</th>
+            <th></th>
         </tr>
         </thead>
         <tbody>

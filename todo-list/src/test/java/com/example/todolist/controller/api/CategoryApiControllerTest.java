@@ -8,6 +8,9 @@ import com.example.todolist.dto.response.GetCategoryResponse;
 import com.example.todolist.entity.Category;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.service.CategoryService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,15 +23,22 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CategoryApiController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class CategoryApiControllerTest {
+
+    private static final String BASE_URL = "/api/v1/categories";
 
     @Autowired
     private MockMvc mockMvc;
@@ -39,161 +49,177 @@ class CategoryApiControllerTest {
     @MockitoBean
     private CategoryMapper categoryMapper;
 
+    private ObjectMapper objectMapper;
+
+    private UUID categoryId;
+    private Category categoryWork;
+    private Category categoryHome;
+    private GetCategoryResponse getResponseWork;
+    private GetCategoryResponse getResponseHome;
+    private CreateCategoryResponse createResponse;
+
+    @BeforeEach
+    void setUp() {
+        objectMapper = new ObjectMapper();
+
+        categoryId = UUID.randomUUID();
+
+        categoryWork = new Category();
+        categoryWork.setId(categoryId);
+        categoryWork.setName("Work");
+        categoryWork.setColor("#FFFFFF");
+
+        categoryHome = new Category();
+        categoryHome.setId(UUID.randomUUID());
+        categoryHome.setName("Home");
+        categoryHome.setColor("#BBBBBB");
+
+        getResponseWork = new GetCategoryResponse(
+                categoryWork.getId(),
+                categoryWork.getName(),
+                categoryWork.getColor(),
+                null
+        );
+
+        getResponseHome = new GetCategoryResponse(
+                categoryHome.getId(),
+                categoryHome.getName(),
+                categoryHome.getColor(),
+                null
+        );
+
+        createResponse = new CreateCategoryResponse(
+                categoryWork.getId(),
+                categoryWork.getName(),
+                categoryWork.getColor(),
+                null
+        );
+    }
+
     @Test
-    void getAll_ShouldReturnListOfCategories() throws Exception {
-        Category c1 = new Category();
-        c1.setId(UUID.randomUUID());
-        c1.setName("Work");
-        c1.setColor("#AAAAAA");
+    @DisplayName("GET /api/v1/categories should return list of categories")
+    void shouldReturnAllCategories() throws Exception {
+        when(categoryService.findAllCategories()).thenReturn(List.of(categoryWork, categoryHome));
+        when(categoryMapper.mapToGetCategoryResponse(List.of(categoryWork, categoryHome)))
+                .thenReturn(List.of(getResponseWork, getResponseHome));
 
-        Category c2 = new Category();
-        c2.setId(UUID.randomUUID());
-        c2.setName("Home");
-        c2.setColor("#BBBBBB");
-
-        GetCategoryResponse r1 = new GetCategoryResponse(c1.getId(), "Work", "#AAAAAA", null);
-        GetCategoryResponse r2 = new GetCategoryResponse(c2.getId(), "Home", "#BBBBBB", null);
-
-        when(categoryService.findAllCategories()).thenReturn(List.of(c1, c2));
-        when(categoryMapper.mapToGetCategoryResponse(List.of(c1, c2)))
-                .thenReturn(List.of(r1, r2));
-
-        mockMvc.perform(get("/api/v1/categories"))
+        mockMvc.perform(get(BASE_URL))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id", is(categoryWork.getId().toString())))
                 .andExpect(jsonPath("$[0].name", is("Work")))
-                .andExpect(jsonPath("$[1].name", is("Home")));
+                .andExpect(jsonPath("$[0].color", is("#FFFFFF")))
+                .andExpect(jsonPath("$[1].id", is(categoryHome.getId().toString())))
+                .andExpect(jsonPath("$[1].name", is("Home")))
+                .andExpect(jsonPath("$[1].color", is("#BBBBBB")));
     }
 
     @Test
-    void getById_ShouldReturnCategory() throws Exception {
-        UUID id = UUID.randomUUID();
+    @DisplayName("GET /api/v1/categories/{id} should return single category")
+    void shouldReturnCategoryById() throws Exception {
+        when(categoryService.findCategoryById(categoryId)).thenReturn(categoryWork);
+        when(categoryMapper.mapToGetCategoryResponse(categoryWork)).thenReturn(getResponseWork);
 
-        Category category = new Category();
-        category.setId(id);
-        category.setName("Work");
-        category.setColor("#FFFFFF");
-
-        GetCategoryResponse response =
-                new GetCategoryResponse(id, "Work", "#FFFFFF", null);
-
-        when(categoryService.findCategoryById(id)).thenReturn(category);
-        when(categoryMapper.mapToGetCategoryResponse(category)).thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/categories/" + id))
+        mockMvc.perform(get(BASE_URL + "/" + categoryId))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(categoryId.toString())))
                 .andExpect(jsonPath("$.name", is("Work")))
-                .andExpect(jsonPath("$.color", is("#FFFFFF")))
-                .andExpect(jsonPath("$.id", is(id.toString())));
+                .andExpect(jsonPath("$.color", is("#FFFFFF")));
     }
 
     @Test
-    void getById_ShouldReturn404_WhenNotFound() throws Exception {
-        UUID id = UUID.randomUUID();
+    @DisplayName("GET /api/v1/categories/{id} should return 404 when category not found")
+    void shouldReturnNotFoundWhenCategoryDoesNotExist() throws Exception {
+        when(categoryService.findCategoryById(categoryId))
+                .thenThrow(new CategoryNotFoundException("Not found", categoryId));
 
-        when(categoryService.findCategoryById(id))
-                .thenThrow(new CategoryNotFoundException("Not found", id));
-
-        mockMvc.perform(get("/api/v1/categories/" + id))
+        mockMvc.perform(get(BASE_URL + "/" + categoryId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void create_ShouldReturnCreatedCategory() throws Exception {
-        UUID id = UUID.randomUUID();
-
-        Category created = new Category();
-        created.setId(id);
-        created.setName("Work");
-        created.setColor("#FFFFFF");
-
-        CreateCategoryResponse response =
-                new CreateCategoryResponse(id, "Work", "#FFFFFF", null);
+    @DisplayName("POST /api/v1/categories should create category and return 201")
+    void shouldCreateCategory() throws Exception {
+        CreateCategoryRequest request = new CreateCategoryRequest("Work", "#FFFFFF");
+        String json = objectMapper.writeValueAsString(request);
 
         when(categoryService.createCategory(any(CreateCategoryRequest.class)))
-                .thenReturn(created);
+                .thenReturn(categoryWork);
+        when(categoryMapper.mapToCreateCategoryResponse(categoryWork))
+                .thenReturn(createResponse);
 
-        when(categoryMapper.mapToCreateCategoryResponse(created))
-                .thenReturn(response);
-
-        String json = """
-                {"name":"Work","color":"#FFFFFF"}
-                """;
-
-        mockMvc.perform(post("/api/v1/categories")
+        mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(categoryId.toString())))
                 .andExpect(jsonPath("$.name", is("Work")))
-                .andExpect(jsonPath("$.color", is("#FFFFFF")))
-                .andExpect(jsonPath("$.id", is(id.toString())));
+                .andExpect(jsonPath("$.color", is("#FFFFFF")));
     }
 
     @Test
-    void update_ShouldReturnUpdatedCategory() throws Exception {
-        UUID id = UUID.randomUUID();
+    @DisplayName("PUT /api/v1/categories/{id} should update existing category")
+    void shouldUpdateCategory() throws Exception {
+        UpdateCategoryRequest updateRequest = new UpdateCategoryRequest("School", "#000000");
+        String json = objectMapper.writeValueAsString(updateRequest);
 
-        Category updated = new Category();
-        updated.setId(id);
-        updated.setName("School");
-        updated.setColor("#000000");
+        Category updatedCategory = new Category();
+        updatedCategory.setId(categoryId);
+        updatedCategory.setName("School");
+        updatedCategory.setColor("#000000");
 
-        GetCategoryResponse response =
-                new GetCategoryResponse(id, "School", "#000000", null);
+        GetCategoryResponse updatedResponse =
+                new GetCategoryResponse(categoryId, "School", "#000000", null);
 
         when(categoryService.updateCategory(any(UUID.class), any(UpdateCategoryRequest.class)))
-                .thenReturn(updated);
+                .thenReturn(updatedCategory);
+        when(categoryMapper.mapToGetCategoryResponse(updatedCategory))
+                .thenReturn(updatedResponse);
 
-        when(categoryMapper.mapToGetCategoryResponse(updated)).thenReturn(response);
-
-        String json = """
-                {"name":"School","color":"#000000"}
-                """;
-
-        mockMvc.perform(put("/api/v1/categories/" + id)
+        mockMvc.perform(put(BASE_URL + "/" + categoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(categoryId.toString())))
                 .andExpect(jsonPath("$.name", is("School")))
-                .andExpect(jsonPath("$.color", is("#000000")))
-                .andExpect(jsonPath("$.id", is(id.toString())));
+                .andExpect(jsonPath("$.color", is("#000000")));
     }
 
     @Test
-    void update_ShouldReturn404_WhenCategoryNotFound() throws Exception {
-        UUID id = UUID.randomUUID();
+    @DisplayName("PUT /api/v1/categories/{id} should return 404 when category not found")
+    void shouldReturnNotFoundWhenUpdatingNonExistingCategory() throws Exception {
+        UpdateCategoryRequest updateRequest = new UpdateCategoryRequest("School", "#000000");
+        String json = objectMapper.writeValueAsString(updateRequest);
 
         when(categoryService.updateCategory(any(UUID.class), any(UpdateCategoryRequest.class)))
-                .thenThrow(new CategoryNotFoundException("Not found", id));
+                .thenThrow(new CategoryNotFoundException("Not found", categoryId));
 
-        String json = """
-                {"name":"School","color":"#000000"}
-                """;
-
-        mockMvc.perform(put("/api/v1/categories/" + id)
+        mockMvc.perform(put(BASE_URL + "/" + categoryId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void delete_ShouldReturn204() throws Exception {
-        UUID id = UUID.randomUUID();
-
-        mockMvc.perform(delete("/api/v1/categories/" + id))
+    @DisplayName("DELETE /api/v1/categories/{id} should delete category and return 204")
+    void shouldDeleteCategory() throws Exception {
+        mockMvc.perform(delete(BASE_URL + "/" + categoryId))
                 .andExpect(status().isNoContent());
 
-        Mockito.verify(categoryService).deleteCategoryById(id);
+        Mockito.verify(categoryService).deleteCategoryById(categoryId);
     }
 
     @Test
-    void delete_ShouldReturn404_WhenCategoryNotFound() throws Exception {
-        UUID id = UUID.randomUUID();
+    @DisplayName("DELETE /api/v1/categories/{id} should return 404 when category not found")
+    void shouldReturnNotFoundWhenDeletingNonExistingCategory() throws Exception {
+        doThrow(new CategoryNotFoundException("Not found", categoryId))
+                .when(categoryService).deleteCategoryById(categoryId);
 
-        Mockito.doThrow(new CategoryNotFoundException("Not found", id))
-                .when(categoryService).deleteCategoryById(id);
-
-        mockMvc.perform(delete("/api/v1/categories/" + id))
+        mockMvc.perform(delete(BASE_URL + "/" + categoryId))
                 .andExpect(status().isNotFound());
     }
 }
