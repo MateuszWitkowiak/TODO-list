@@ -1,5 +1,10 @@
 package com.example.todolist.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.example.todolist.dto.request.CreateCategoryRequest;
 import com.example.todolist.dto.request.UpdateCategoryRequest;
 import com.example.todolist.entity.Category;
@@ -8,6 +13,9 @@ import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,208 +25,186 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTest {
 
-    @Mock
-    CategoryRepository categoryRepository;
+  @Mock CategoryRepository categoryRepository;
 
-    @Mock
-    UserRepository userRepository;
+  @Mock UserRepository userRepository;
 
-    @Mock
-    UserService userService;
+  @Mock UserService userService;
 
-    @InjectMocks
-    CategoryService categoryService;
+  @InjectMocks CategoryService categoryService;
 
-    @Mock
-    TaskRepository taskRepository;
+  @Mock TaskRepository taskRepository;
 
-    @BeforeEach
-    void clearSecurity() {
-        SecurityContextHolder.clearContext();
-    }
+  @BeforeEach
+  void clearSecurity() {
+    SecurityContextHolder.clearContext();
+  }
 
-    // ----------------------------------------------------------
-    //  findAllCategories()
-    // ----------------------------------------------------------
-    @Test
-    void getAllCategories_ShouldReturnAllCategoriesForUser() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
+  // ----------------------------------------------------------
+  //  findAllCategories()
+  // ----------------------------------------------------------
+  @Test
+  void getAllCategories_ShouldReturnAllCategoriesForUser() {
+    User user = new User();
+    user.setId(UUID.randomUUID());
 
-        Category c1 = new Category();
-        c1.setName("Work");
+    Category c1 = new Category();
+    c1.setName("Work");
 
-        Category c2 = new Category();
-        c2.setName("Home");
+    Category c2 = new Category();
+    c2.setName("Home");
 
-        when(userService.getCurrentUser()).thenReturn(user);
-        when(categoryRepository.findAllByUserId(user.getId()))
-                .thenReturn(List.of(c1, c2));
+    when(userService.getCurrentUser()).thenReturn(user);
+    when(categoryRepository.findAllByUserId(user.getId())).thenReturn(List.of(c1, c2));
 
-        List<Category> result = categoryService.findAllCategories();
+    List<Category> result = categoryService.findAllCategories();
 
-        assertEquals(2, result.size());
-        assertEquals("Work", result.get(0).getName());
-        assertEquals("Home", result.get(1).getName());
-    }
+    assertEquals(2, result.size());
+    assertEquals("Work", result.get(0).getName());
+    assertEquals("Home", result.get(1).getName());
+  }
 
-    // ----------------------------------------------------------
-    //  findCategoryById()
-    // ----------------------------------------------------------
-    @Test
-    void getCategoryById_ShouldReturnCategory() {
-        UUID id = UUID.randomUUID();
-        Category c = new Category();
-        c.setId(id);
-        c.setName("Work");
+  // ----------------------------------------------------------
+  //  findCategoryById()
+  // ----------------------------------------------------------
+  @Test
+  void getCategoryById_ShouldReturnCategory() {
+    UUID id = UUID.randomUUID();
+    Category c = new Category();
+    c.setId(id);
+    c.setName("Work");
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(c));
+    when(categoryRepository.findById(id)).thenReturn(Optional.of(c));
 
-        Category result = categoryService.findCategoryById(id);
+    Category result = categoryService.findCategoryById(id);
 
-        assertEquals("Work", result.getName());
-    }
+    assertEquals("Work", result.getName());
+  }
 
-    @Test
-    void getCategoryById_ShouldThrow_WhenNotFound() {
-        UUID id = UUID.randomUUID();
+  @Test
+  void getCategoryById_ShouldThrow_WhenNotFound() {
+    UUID id = UUID.randomUUID();
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+    when(categoryRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(CategoryNotFoundException.class,
-                () -> categoryService.findCategoryById(id));
-    }
+    assertThrows(CategoryNotFoundException.class, () -> categoryService.findCategoryById(id));
+  }
 
-    // ----------------------------------------------------------
-    //  createCategory()
-    // ----------------------------------------------------------
-    @Test
-    void createCategory_ShouldCreateCategory() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("test@example.com", null)
-        );
+  // ----------------------------------------------------------
+  //  createCategory()
+  // ----------------------------------------------------------
+  @Test
+  void createCategory_ShouldCreateCategory() {
+    SecurityContextHolder.getContext()
+        .setAuthentication(new UsernamePasswordAuthenticationToken("test@example.com", null));
 
-        User user = new User();
-        user.setEmail("test@example.com");
+    User user = new User();
+    user.setEmail("test@example.com");
 
-        when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(Optional.of(user));
+    when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
-        when(userService.getCurrentUser()).thenReturn(user);
-        when(categoryRepository.existsCategoriesByNameAndUserId("Work", user.getId()))
-                .thenReturn(false);
+    when(userService.getCurrentUser()).thenReturn(user);
+    when(categoryRepository.existsCategoriesByNameAndUserId("Work", user.getId()))
+        .thenReturn(false);
 
-        CreateCategoryRequest dto = new CreateCategoryRequest();
-        dto.setName("Work");
-        dto.setColor("#FFF");
+    CreateCategoryRequest dto = new CreateCategoryRequest();
+    dto.setName("Work");
+    dto.setColor("#FFF");
 
-        Category saved = new Category();
-        saved.setName("Work");
-        saved.setColor("#FFF");
-        saved.setUser(user);
+    Category saved = new Category();
+    saved.setName("Work");
+    saved.setColor("#FFF");
+    saved.setUser(user);
 
-        when(categoryRepository.save(any(Category.class))).thenReturn(saved);
+    when(categoryRepository.save(any(Category.class))).thenReturn(saved);
 
-        Category result = categoryService.createCategory(dto);
+    Category result = categoryService.createCategory(dto);
 
-        assertEquals("Work", result.getName());
-        assertEquals("#FFF", result.getColor());
-        assertEquals(user, result.getUser());
-    }
+    assertEquals("Work", result.getName());
+    assertEquals("#FFF", result.getColor());
+    assertEquals(user, result.getUser());
+  }
 
-    @Test
-    void createCategory_ShouldThrow_WhenExists() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("test@example.com", null)
-        );
+  @Test
+  void createCategory_ShouldThrow_WhenExists() {
+    SecurityContextHolder.getContext()
+        .setAuthentication(new UsernamePasswordAuthenticationToken("test@example.com", null));
 
-        User user = new User();
-        user.setEmail("test@example.com");
+    User user = new User();
+    user.setEmail("test@example.com");
 
-        when(userRepository.findByEmail("test@example.com"))
-                .thenReturn(Optional.of(user));
+    when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
-        when(userService.getCurrentUser()).thenReturn(user);
-        when(categoryRepository.existsCategoriesByNameAndUserId("Work", user.getId()))
-                .thenReturn(true);
+    when(userService.getCurrentUser()).thenReturn(user);
+    when(categoryRepository.existsCategoriesByNameAndUserId("Work", user.getId())).thenReturn(true);
 
-        CreateCategoryRequest dto = new CreateCategoryRequest();
-        dto.setName("Work");
-        dto.setColor("#FFF");
+    CreateCategoryRequest dto = new CreateCategoryRequest();
+    dto.setName("Work");
+    dto.setColor("#FFF");
 
-        assertThrows(IllegalArgumentException.class,
-                () -> categoryService.createCategory(dto));
-    }
+    assertThrows(IllegalArgumentException.class, () -> categoryService.createCategory(dto));
+  }
 
-    // ----------------------------------------------------------
-    //  updateCategory()
-    // ----------------------------------------------------------
-    @Test
-    void updateCategory_ShouldUpdateBothFields() {
-        UUID id = UUID.randomUUID();
+  // ----------------------------------------------------------
+  //  updateCategory()
+  // ----------------------------------------------------------
+  @Test
+  void updateCategory_ShouldUpdateBothFields() {
+    UUID id = UUID.randomUUID();
 
-        Category existing = new Category();
-        existing.setId(id);
-        existing.setName("Old");
-        existing.setColor("#000");
+    Category existing = new Category();
+    existing.setId(id);
+    existing.setName("Old");
+    existing.setColor("#000");
 
-        UpdateCategoryRequest update = new UpdateCategoryRequest("New", "#FFF");
+    UpdateCategoryRequest update = new UpdateCategoryRequest("New", "#FFF");
 
-        when(categoryRepository.findById(id))
-                .thenReturn(Optional.of(existing));
+    when(categoryRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        when(categoryRepository.save(any(Category.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(categoryRepository.save(any(Category.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Category result = categoryService.updateCategory(id, update);
+    Category result = categoryService.updateCategory(id, update);
 
-        assertEquals("New", result.getName());
-        assertEquals("#FFF", result.getColor());
-    }
+    assertEquals("New", result.getName());
+    assertEquals("#FFF", result.getColor());
+  }
 
-    @Test
-    void updateCategory_ShouldThrow_WhenNotFound() {
-        UUID id = UUID.randomUUID();
-        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+  @Test
+  void updateCategory_ShouldThrow_WhenNotFound() {
+    UUID id = UUID.randomUUID();
+    when(categoryRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(CategoryNotFoundException.class,
-                () -> categoryService.updateCategory(id, new UpdateCategoryRequest("A", "B")));
-    }
+    assertThrows(
+        CategoryNotFoundException.class,
+        () -> categoryService.updateCategory(id, new UpdateCategoryRequest("A", "B")));
+  }
 
-    // ----------------------------------------------------------
-    //  deleteCategory()
-    // ----------------------------------------------------------
-    @Test
-    void deleteCategory_ShouldDelete() {
-        UUID id = UUID.randomUUID();
-        Category category = new Category();
-        category.setId(id);
+  // ----------------------------------------------------------
+  //  deleteCategory()
+  // ----------------------------------------------------------
+  @Test
+  void deleteCategory_ShouldDelete() {
+    UUID id = UUID.randomUUID();
+    Category category = new Category();
+    category.setId(id);
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+    when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
 
-        categoryService.deleteCategoryById(id);
+    categoryService.deleteCategoryById(id);
 
-        verify(categoryRepository).findById(id);
-        verify(categoryRepository).delete(category);
-    }
+    verify(categoryRepository).findById(id);
+    verify(categoryRepository).delete(category);
+  }
 
-    @Test
-    void deleteCategory_ShouldThrow_WhenNotFound() {
-        UUID id = UUID.randomUUID();
-        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+  @Test
+  void deleteCategory_ShouldThrow_WhenNotFound() {
+    UUID id = UUID.randomUUID();
+    when(categoryRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(CategoryNotFoundException.class,
-                () -> categoryService.deleteCategoryById(id));
-    }
+    assertThrows(CategoryNotFoundException.class, () -> categoryService.deleteCategoryById(id));
+  }
 }

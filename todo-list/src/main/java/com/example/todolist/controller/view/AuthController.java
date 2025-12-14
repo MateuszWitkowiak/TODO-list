@@ -11,27 +11,27 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Controller
 public class AuthController {
 
-    private final UserService userService;
+  private final UserService userService;
 
-    public AuthController(UserService userService) {
-        this.userService = userService;
-    }
+  public AuthController(UserService userService) {
+    this.userService = userService;
+  }
 
-    @GetMapping("/register")
-    public String registerForm(Model model) {
-        model.addAttribute("registerRequest", new RegisterRequest());
-        return "register";
-    }
+  @GetMapping("/register")
+  public String registerForm(Model model) {
+    model.addAttribute("registerRequest", new RegisterRequest());
+    return "register";
+  }
 
-    @PostMapping("/register")
-    public String registerSubmit(@ModelAttribute RegisterRequest registerRequest) {
-        userService.register(registerRequest);
+  @PostMapping("/register")
+  public String registerSubmit(@ModelAttribute RegisterRequest registerRequest) {
+    userService.register(registerRequest);
 
-        return "redirect:/login?registered";
-    }
+    return "redirect:/login?registered";
+  }
 
-    @GetMapping("/login")
-    public String loginForm() {
-        return "login";
-    }
+  @GetMapping("/login")
+  public String loginForm() {
+    return "login";
+  }
 }

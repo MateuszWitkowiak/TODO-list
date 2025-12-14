@@ -1,31 +1,29 @@
 package com.example.todolist.dto.response;
 
-
 import com.example.todolist.entity.Status;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateTaskResponse {
-    private UUID id;
+  private UUID id;
 
-    private String title;
+  private String title;
 
-    private String description;
+  private String description;
 
-    private Status status;
+  private Status status;
 
-    private LocalDateTime dueDate;
+  private LocalDateTime dueDate;
 
-    private UUID categoryId;
+  private UUID categoryId;
 
-    private UUID userId;
+  private UUID userId;
 }

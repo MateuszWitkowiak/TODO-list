@@ -9,99 +9,109 @@ import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CategoryService {
-    private final CategoryRepository categoryRepository;
-    private final UserRepository userRepository;
-    private final UserService userService;
-    private final TaskRepository taskRepository;
+  private final CategoryRepository categoryRepository;
+  private final UserRepository userRepository;
+  private final UserService userService;
+  private final TaskRepository taskRepository;
 
-    public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository, UserService userService, TaskRepository taskRepository) {
-        this.categoryRepository = categoryRepository;
-        this.userRepository = userRepository;
-        this.userService = userService;
-        this.taskRepository = taskRepository;
+  public CategoryService(
+      CategoryRepository categoryRepository,
+      UserRepository userRepository,
+      UserService userService,
+      TaskRepository taskRepository) {
+    this.categoryRepository = categoryRepository;
+    this.userRepository = userRepository;
+    this.userService = userService;
+    this.taskRepository = taskRepository;
+  }
+
+  @Transactional
+  public void deleteCategoryById(UUID categoryId) {
+    Category category =
+        categoryRepository
+            .findById(categoryId)
+            .orElseThrow(() -> new CategoryNotFoundException("id", categoryId));
+
+    List<Task> tasksWithDeletedCategory = taskRepository.findAllByCategoryId(categoryId);
+    tasksWithDeletedCategory.forEach(task -> task.setCategory(null));
+    categoryRepository.delete(category);
+  }
+
+  @Transactional(readOnly = true)
+  public List<Category> findAllCategories() {
+    return categoryRepository.findAllByUserId(userService.getCurrentUser().getId());
+  }
+
+  @Transactional(readOnly = true)
+  public List<Category> findAllCategories(String sort, String direction) {
+    UUID userId = userService.getCurrentUser().getId();
+
+    List<Category> categories = categoryRepository.findAllByUserId(userId);
+
+    Collator polishCollator = Collator.getInstance(new Locale("pl", "PL"));
+    polishCollator.setStrength(Collator.PRIMARY);
+
+    Comparator<Category> comparator =
+        Comparator.comparing(Category::getName, Comparator.nullsLast(polishCollator));
+
+    if ("desc".equalsIgnoreCase(direction)) {
+      comparator = comparator.reversed();
     }
 
-    @Transactional
-    public void deleteCategoryById(UUID categoryId) {
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new CategoryNotFoundException("id", categoryId));
+    categories.sort(comparator);
+    return categories;
+  }
 
-        List<Task> tasksWithDeletedCategory = taskRepository.findAllByCategoryId(categoryId);
-        tasksWithDeletedCategory.forEach(task -> task.setCategory(null));
-        categoryRepository.delete(category);
+  @Transactional(readOnly = true)
+  public Category findCategoryById(UUID categoryId) {
+    return categoryRepository
+        .findById(categoryId)
+        .orElseThrow(() -> new CategoryNotFoundException("id", categoryId));
+  }
+
+  @Transactional
+  public Category createCategory(CreateCategoryRequest dto) {
+    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+    User user =
+        userRepository
+            .findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+    if (categoryRepository.existsCategoriesByNameAndUserId(
+        dto.getName(), userService.getCurrentUser().getId())) {
+      throw new IllegalArgumentException("Category already exists");
     }
 
-    @Transactional(readOnly = true)
-    public List<Category> findAllCategories() {
-        return categoryRepository.findAllByUserId(userService.getCurrentUser().getId());
+    Category category = new Category();
+    category.setName(dto.getName());
+    category.setColor(dto.getColor());
+    category.setUser(user);
+
+    return categoryRepository.save(category);
+  }
+
+  @Transactional
+  public Category updateCategory(UUID id, UpdateCategoryRequest update) {
+    Category category = findCategoryById(id);
+
+    if (update.name() != null) {
+      category.setName(update.name());
+    }
+    if (update.color() != null) {
+      category.setColor(update.color());
     }
 
-    @Transactional(readOnly = true)
-    public List<Category> findAllCategories(String sort, String direction) {
-        UUID userId = userService.getCurrentUser().getId();
-
-        List<Category> categories = categoryRepository.findAllByUserId(userId);
-
-        Collator polishCollator = Collator.getInstance(new Locale("pl", "PL"));
-        polishCollator.setStrength(Collator.PRIMARY);
-
-        Comparator<Category> comparator =
-                Comparator.comparing(Category::getName, Comparator.nullsLast(polishCollator));
-
-        if ("desc".equalsIgnoreCase(direction)) {
-            comparator = comparator.reversed();
-        }
-
-        categories.sort(comparator);
-        return categories;
-    }
-
-    @Transactional(readOnly = true)
-    public Category findCategoryById(UUID categoryId) {
-        return categoryRepository.findById(categoryId).orElseThrow(() -> new CategoryNotFoundException("id", categoryId));
-    }
-
-    @Transactional
-    public Category createCategory(CreateCategoryRequest dto) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        if (categoryRepository.existsCategoriesByNameAndUserId(dto.getName(), userService.getCurrentUser().getId())) {
-            throw new IllegalArgumentException("Category already exists");
-        }
-
-        Category category = new Category();
-        category.setName(dto.getName());
-        category.setColor(dto.getColor());
-        category.setUser(user);
-
-        return categoryRepository.save(category);
-    }
-
-    @Transactional
-    public Category updateCategory(UUID id, UpdateCategoryRequest update) {
-        Category category = findCategoryById(id);
-
-        if (update.name() != null) {
-            category.setName(update.name());
-        }
-        if (update.color() != null) {
-            category.setColor(update.color());
-        }
-
-        return categoryRepository.save(category);
-    }
+    return categoryRepository.save(category);
+  }
 }

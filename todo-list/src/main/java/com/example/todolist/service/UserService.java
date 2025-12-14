@@ -12,31 +12,36 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder encoder;
+  private final UserRepository userRepository;
+  private final PasswordEncoder encoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder encoder) {
-        this.userRepository = userRepository;
-        this.encoder = encoder;
-    }
+  public UserService(UserRepository userRepository, PasswordEncoder encoder) {
+    this.userRepository = userRepository;
+    this.encoder = encoder;
+  }
 
-    @Transactional
-    public void register(RegisterRequest registerDTO) {
-        userRepository.findByEmail(registerDTO.getEmail()).ifPresent(u -> {throw new UserAlreadyExistsException("User with this email already exists.");
-        });
+  @Transactional
+  public void register(RegisterRequest registerDTO) {
+    userRepository
+        .findByEmail(registerDTO.getEmail())
+        .ifPresent(
+            u -> {
+              throw new UserAlreadyExistsException("User with this email already exists.");
+            });
 
-        User user = new User();
-        user.setEmail(registerDTO.getEmail());
-        user.setPassword(encoder.encode(registerDTO.getPassword()));
-        user.setRole("USER");
+    User user = new User();
+    user.setEmail(registerDTO.getEmail());
+    user.setPassword(encoder.encode(registerDTO.getPassword()));
+    user.setRole("USER");
 
-        userRepository.save(user);
-    }
+    userRepository.save(user);
+  }
 
-    @Transactional(readOnly = true)
-    public User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-    }
+  @Transactional(readOnly = true)
+  public User getCurrentUser() {
+    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+    return userRepository
+        .findByEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+  }
 }

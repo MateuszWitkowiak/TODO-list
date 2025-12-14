@@ -13,36 +13,27 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http,
-                                           CustomUserDetailsService customUserDetailsService) throws Exception {
+  @Bean
+  public SecurityFilterChain filterChain(
+      HttpSecurity http, CustomUserDetailsService customUserDetailsService) throws Exception {
 
-        http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/h2-console/**", "/register", "/login").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll()
-                )
-                .userDetailsService(customUserDetailsService)
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**")
-                )
-                .headers(headers -> headers.frameOptions().disable());
+    http.authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers("/h2-console/**", "/register", "/login")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .formLogin(form -> form.loginPage("/login").defaultSuccessUrl("/", true).permitAll())
+        .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout").permitAll())
+        .userDetailsService(customUserDetailsService)
+        .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+        .headers(headers -> headers.frameOptions().disable());
 
-        return http.build();
-    }
+    return http.build();
+  }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 }
