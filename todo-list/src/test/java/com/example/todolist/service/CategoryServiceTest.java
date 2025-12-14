@@ -6,6 +6,7 @@ import com.example.todolist.entity.Category;
 import com.example.todolist.entity.User;
 import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
+import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class CategoryServiceTest {
 
     @InjectMocks
     CategoryService categoryService;
+
+    @Mock
+    TaskRepository taskRepository;
 
     @BeforeEach
     void clearSecurity() {

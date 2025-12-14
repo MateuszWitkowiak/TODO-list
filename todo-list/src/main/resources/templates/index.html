@@ -49,10 +49,10 @@
     <!-- Upcoming Tasks -->
     <div class="card shadow-sm">
         <div class="card-body">
-            <h5 class="mb-3">Najbliższe zadania</h5>
+            <h5 class="mb-3">Upcoming tasks</h5>
 
             <div th:if="${#lists.isEmpty(upcomingTasks)}">
-                <p class="text-muted">Brak nadchodzących zadań 📭</p>
+                <p class="text-muted">Upcoming tasks not found.</p>
             </div>
 
             <ul th:unless="${#lists.isEmpty(upcomingTasks)}" class="list-group">

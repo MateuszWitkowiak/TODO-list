@@ -12,19 +12,16 @@
             height: 100%;
         }
 
-        /* make page a column flex container so footer can stick to bottom */
         body {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
 
-        /* the main content area grows to fill available space */
         .content-wrapper {
             flex: 1 0 auto;
         }
 
-        /* optional: ensure footer visually sticks to bottom */
         footer {
             flex-shrink: 0;
         }
@@ -51,53 +48,48 @@
 
 <body class="bg-light">
 
-<nav class="navbar navbar-expand-lg py-3"
-     style="background: linear-gradient(90deg, #316ff6, #4a8cf4);">
+<nav class="navbar navbar-expand-lg py-3 mb-3" style="background: linear-gradient(90deg, #316ff6, #4a8cf4);">
     <div class="container-fluid">
-
-        <div class="row w-100 align-items-center">
-
-            <div class="col d-flex align-items-center">
-                <a class="navbar-brand fw-bold m-0"
-                   style="font-size: 1.7rem; color: #fff;"
-                   th:href="@{/}">
-                    TodoList
-                </a>
-            </div>
-
-            <div class="col d-flex justify-content-center gap-3">
-                <a class="nav-link-custom" th:href="@{/}">Home</a>
-                <a class="nav-link-custom" th:href="@{/tasks}">Tasks</a>
-                <a class="nav-link-custom" th:href="@{/categories}">Categories</a>
-                <a class="btn btn-light px-3 py-1 fw-semibold"
-                   style="border-radius: 8px;"
-                   th:href="@{/tasks/add}">
-                    + Add Task
-                </a>
-                <a class="btn btn-light px-3 py-1 fw-semibold"
-                   style="border-radius: 8px;"
-                   th:href="@{/categories/add}">
-                    + Add Category
-                </a>
-            </div>
-
-            <div class="col d-flex justify-content-end">
-                <a class="nav-link-custom nav-link-logout" th:href="@{/logout}">
-                    Logout
-                </a>
-            </div>
-
+        <a class="navbar-brand fw-bold" style="font-size:1.7rem;color:#fff;" th:href="@{/}">Task Manager</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-2 align-items-lg-center">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" th:href="@{/}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" th:href="@{/tasks}">Tasks</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" th:href="@{/categories}">Categories</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-light px-3 py-1 fw-semibold me-2" style="border-radius:8px;" th:href="@{/tasks/add}">+ Add Task</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-light px-3 py-1 fw-semibold" style="border-radius:8px;" th:href="@{/categories/add}">+ Add Category</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ms-lg-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom nav-link-logout" th:href="@{/logout}">
+                        Logout
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 </nav>
 
-<!-- main content must be the flex child that grows -->
 <main class="container py-4 content-wrapper" layout:fragment="content">
 </main>
 
 <footer class="bg-white border-top py-3 mt-5">
     <div class="container text-center text-muted">
-        © 2025 TodoList — All rights reserved
+        © 2025 Task Manager — All rights reserved
     </div>
 </footer>
 

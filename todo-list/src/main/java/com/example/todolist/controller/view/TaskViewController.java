@@ -81,8 +81,10 @@ public class TaskViewController {
     @GetMapping("/tasksByTitle")
     public String showTasksByTitle(@RequestParam(name = "title", required = false) String title, Model model){
         List<Task> tasks = taskService.searchTasksByTitle(title, 0, 50);
+        List<Category> categories = categoryService.findAllCategories();
         model.addAttribute("tasks", tasks);
         model.addAttribute("searchTitle", title);
+        model.addAttribute("categories", categories);
 
         return "tasks";
     }
@@ -129,5 +131,12 @@ public class TaskViewController {
     public String deleteTask(@PathVariable UUID taskId) {
         taskService.deleteTaskById(taskId);
         return "redirect:/tasks";
+    }
+
+    @GetMapping("/{taskId}")
+    public String showTask(@PathVariable UUID taskId, Model model) {
+        Task task = taskService.findTaskById(taskId);
+        model.addAttribute("task", task);
+        return "task-info";
     }
 }

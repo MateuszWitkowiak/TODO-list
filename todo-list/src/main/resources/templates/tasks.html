@@ -93,13 +93,13 @@
                 </a>
             </th>
 
-            <th>Action</th>
-            <th></th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="task : ${tasks}">
-            <td th:text="${task.title}"></td>
+            <td>
+                <a th:href="@{/tasks/{id}(id=${task.id})}" class="btn btn-link p-0" th:text="${task.title}"></a>
+            </td>
             <td th:text="${task.description}"></td>
 
             <td>
@@ -113,15 +113,6 @@
 
             <td th:text="${#temporals.format(task.dueDate, 'dd.MM.yyyy')}"></td>
             <td th:text="${task.status}"></td>
-            <td>
-                <a th:href="@{/tasks/edit/{id}(id=${task.id})}" class="btn btn-warning btn-sm">Edit</a>
-            </td>
-            <td>
-                <a th:href="@{/tasks/{id}/delete(id=${task.id})}"
-                   class="btn btn-danger btn-sm">
-                    Delete
-                </a>
-            </td>
         </tr>
         </tbody>
     </table>
