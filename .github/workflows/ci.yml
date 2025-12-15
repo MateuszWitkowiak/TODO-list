@@ -19,7 +19,7 @@ jobs:
         with:
           java-version: 17
           distribution: temurin
-          
+
       - name: Make mvnw executable
         run: chmod +x mvnw
 
@@ -45,7 +45,8 @@ jobs:
         with:
           java-version: 17
           distribution: temurin
-
+      - name: Make mvnw executable
+        run: chmod +x mvnw
       - name: Build project (create JAR)
         working-directory: todo-list
         run: |
