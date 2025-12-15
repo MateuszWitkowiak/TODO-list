@@ -19,6 +19,9 @@ jobs:
         with:
           java-version: 17
           distribution: temurin
+          
+      - name: Make mvnw executable
+        run: chmod +x mvnw
 
       - name: Check Java formatting with Spotless
         run: |
