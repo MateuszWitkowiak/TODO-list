@@ -7,6 +7,9 @@ on:
 jobs:
   check-format:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: todo-list
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -41,6 +44,7 @@ jobs:
           distribution: temurin
 
       - name: Build project (create JAR)
+        working-directory: todo-list
         run: |
           if [ -f ./mvnw ]; then
             ./mvnw -B clean package -DskipTests
