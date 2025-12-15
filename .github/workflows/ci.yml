@@ -36,6 +36,9 @@ jobs:
     needs: check-format
     if: github.ref == 'refs/heads/main'
     environment: staging
+    defaults:
+      run:
+        working-directory: todo-list
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -48,7 +51,6 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x mvnw
       - name: Build project (create JAR)
-        working-directory: todo-list
         run: |
           if [ -f ./mvnw ]; then
             ./mvnw -B clean package -DskipTests
