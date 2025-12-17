@@ -143,7 +143,7 @@ public class TaskViewController {
 
   @GetMapping("/export")
   public void exportTasks(HttpServletResponse response) {
-    taskService.writeTasksCsvToResponse(response);
+    taskService.exportTasksToCSV(response);
   }
 
   @PostMapping("/import")

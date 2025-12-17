@@ -55,7 +55,7 @@ class CategoryViewControllerTest {
                 .param("color", "#111111")
                 .contentType("application/x-www-form-urlencoded"))
         .andExpect(status().is3xxRedirection())
-        .andExpect(redirectedUrl("/"));
+        .andExpect(redirectedUrl("/categories"));
 
     ArgumentCaptor<CreateCategoryRequest> captor =
         ArgumentCaptor.forClass(CreateCategoryRequest.class);

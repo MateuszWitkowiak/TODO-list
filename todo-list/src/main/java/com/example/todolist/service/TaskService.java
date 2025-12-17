@@ -17,6 +17,8 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -40,17 +42,20 @@ public class TaskService {
   private final CategoryRepository categoryRepository;
   private final UserRepository userRepository;
   private final UserService userService;
+  private final Validator validator;
   private static final Logger log = LoggerFactory.getLogger(TaskService.class);
 
   public TaskService(
       TaskRepository taskRepository,
       CategoryRepository categoryRepository,
       UserRepository userRepository,
-      UserService userService) {
+      UserService userService,
+      Validator validator) {
     this.taskRepository = taskRepository;
     this.categoryRepository = categoryRepository;
     this.userRepository = userRepository;
     this.userService = userService;
+    this.validator = validator;
   }
 
   @Transactional
@@ -214,7 +219,7 @@ public class TaskService {
   }
 
   @Transactional
-  public void writeTasksCsvToResponse(HttpServletResponse response) {
+  public void exportTasksToCSV(HttpServletResponse response) {
     response.setContentType("text/csv; charset=UTF-8");
     response.setHeader("Content-Disposition", "attachment; filename=\"tasks.csv\"");
 
@@ -250,40 +255,76 @@ public class TaskService {
   @Transactional
   public void importTasksFromCsv(MultipartFile file) {
     User user = userService.getCurrentUser();
-
+    List<String> validationErrors = new ArrayList<>();
+    int rowNum = 1;
     try (InputStreamReader isr =
             new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
         CSVReader reader =
             new CSVReaderBuilder(isr)
                 .withCSVParser(new com.opencsv.CSVParserBuilder().withSeparator(';').build())
                 .build()) {
+      String[] header = reader.readNext();
       String[] row;
-      boolean skipHeader = true;
       while ((row = reader.readNext()) != null) {
-        if (skipHeader) {
-          skipHeader = false;
-          continue;
-        }
-        Task task = new Task();
-        task.setTitle(row.length > 0 ? row[0] : null);
-        task.setDescription(row.length > 1 ? row[1] : null);
-        task.setStatus(
+        rowNum++;
+
+        CreateTaskRequest dto = new CreateTaskRequest();
+        dto.setTitle(row.length > 0 && row[0] != null && !row[0].isBlank() ? row[0] : null);
+        dto.setDescription(row.length > 1 && row[1] != null && !row[1].isBlank() ? row[1] : null);
+        dto.setStatus(
             row.length > 2 && row[2] != null && !row[2].isBlank()
                 ? Status.valueOf(row[2])
                 : Status.TODO);
-        task.setDueDate(
+        dto.setDueDate(
             row.length > 3 && row[3] != null && !row[3].isBlank()
                 ? LocalDateTime.parse(row[3])
                 : null);
 
+        UUID categoryId = null;
         if (row.length > 4 && row[4] != null && !row[4].isBlank()) {
           Category category =
               categoryRepository.findByNameAndUserId(row[4], user.getId()).orElse(null);
+          if (category != null) {
+            categoryId = category.getId();
+          }
+        }
+        dto.setCategoryId(categoryId);
+
+        Set<ConstraintViolation<CreateTaskRequest>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+          String err =
+              "Row "
+                  + rowNum
+                  + " ["
+                  + Arrays.toString(row)
+                  + "]: "
+                  + violations.stream()
+                      .map(ConstraintViolation::getMessage)
+                      .reduce((a, b) -> a + "; " + b)
+                      .orElse("");
+          validationErrors.add(err);
+          continue;
+        }
+
+        Task task = new Task();
+        task.setTitle(dto.getTitle());
+        task.setDescription(dto.getDescription());
+        task.setStatus(dto.getStatus());
+        task.setDueDate(dto.getDueDate());
+
+        if (categoryId != null) {
+          Category category = categoryRepository.findById(categoryId).orElse(null);
           task.setCategory(category);
         }
         task.setUser(user);
         taskRepository.save(task);
       }
+
+      if (!validationErrors.isEmpty()) {
+        throw new RuntimeException(
+            "CSV import failed due to validation errors:\n" + String.join("\n", validationErrors));
+      }
+
     } catch (CsvValidationException e) {
       throw new RuntimeException("CSV validation failed: ", e);
     } catch (Exception e) {
