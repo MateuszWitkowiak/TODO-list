@@ -7,6 +7,7 @@ import com.example.todolist.entity.Task;
 import com.example.todolist.service.CategoryService;
 import com.example.todolist.service.TaskService;
 import com.example.todolist.service.filter.TaskFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/tasks")
@@ -136,5 +139,22 @@ public class TaskViewController {
     Task task = taskService.findTaskById(taskId);
     model.addAttribute("task", task);
     return "task-info";
+  }
+
+  @GetMapping("/export")
+  public void exportTasks(HttpServletResponse response) {
+    taskService.exportTasksToCSV(response);
+  }
+
+  @PostMapping("/import")
+  public String importTasks(
+      @RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+    try {
+      taskService.importTasksFromCsv(file);
+      redirectAttributes.addFlashAttribute("successMessage", "Import successful!");
+    } catch (Exception ex) {
+      redirectAttributes.addFlashAttribute("errorMessage", "Import error: " + ex.getMessage());
+    }
+    return "redirect:/tasks";
   }
 }

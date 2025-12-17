@@ -4,7 +4,6 @@
 
 <div layout:fragment="content">
 
-    <!-- Welcome Section -->
     <div class="card shadow-sm mb-4 content-wrapper">
         <div class="card-body">
             <h2 class="mb-2">Welcome to your Task Manager!</h2>
@@ -16,37 +15,50 @@
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-md-4">
+    <div class="row mb-4 g-3">
+        <div class="col-6 col-md-3">
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h4 th:text="${stats.totalTasks}">0</h4>
-                    <p class="text-muted">All Tasks</p>
+                    <p class="text-muted mb-0">All Tasks</p>
                 </div>
             </div>
         </div>
-
-        <div class="col-md-4">
-            <div class="card text-center shadow-sm">
-                <div class="card-body">
-                    <h4 th:text="${stats.doneTasks}">0</h4>
-                    <p class="text-muted">Finished</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
+        <div class="col-6 col-md-3">
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h4 th:text="${stats.todoTasks}">0</h4>
-                    <p class="text-muted">To do</p>
+                    <p class="text-muted mb-0">To do</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 th:text="${stats.inProgressTasks}">0</h4>
+                    <p class="text-muted mb-0">In Progress</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 th:text="${stats.doneTasks}">0</h4>
+                    <p class="text-muted mb-0">Done</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Upcoming Tasks -->
+    <div class="mb-4">
+        <div class="progress" style="height:30px;">
+            <div class="progress-bar progress-bar-striped bg-success" role="progressbar"
+                 th:style="'width:' + ${stats.percentDone} + '%'"
+                 th:text="${stats.percentDone + '% done'}"
+                 aria-valuenow="${stats.percentDone}" aria-valuemin="0" aria-valuemax="100" style="width: 0%">0% done</div>
+        </div>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-body">
             <h5 class="mb-3">Upcoming tasks</h5>

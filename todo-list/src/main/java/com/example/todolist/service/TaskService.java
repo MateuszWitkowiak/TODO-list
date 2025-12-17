@@ -12,6 +12,16 @@ import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
 import com.example.todolist.service.filter.TaskFilter;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvValidationException;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -23,6 +33,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class TaskService {
@@ -31,17 +42,20 @@ public class TaskService {
   private final CategoryRepository categoryRepository;
   private final UserRepository userRepository;
   private final UserService userService;
+  private final Validator validator;
   private static final Logger log = LoggerFactory.getLogger(TaskService.class);
 
   public TaskService(
       TaskRepository taskRepository,
       CategoryRepository categoryRepository,
       UserRepository userRepository,
-      UserService userService) {
+      UserService userService,
+      Validator validator) {
     this.taskRepository = taskRepository;
     this.categoryRepository = categoryRepository;
     this.userRepository = userRepository;
     this.userService = userService;
+    this.validator = validator;
   }
 
   @Transactional
@@ -77,7 +91,7 @@ public class TaskService {
       if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
         status = Status.valueOf(filter.getStatus());
       }
-    } catch (IllegalArgumentException ignored) {
+    } catch (IllegalArgumentException ex) {
       log.warn("Invalid status filter '{}', skipping status filter", filter.getStatus());
     }
 
@@ -178,19 +192,22 @@ public class TaskService {
   }
 
   @Transactional(readOnly = true)
-  public Map<String, Long> getStats() {
+  public Map<String, Object> getStats() {
     UUID userId = userService.getCurrentUser().getId();
-    Map<String, Long> stats = new HashMap<>();
+    Map<String, Object> stats = new HashMap<>();
 
     long total = taskRepository.countByUserId(userId);
     long todo = taskRepository.countByUserIdAndStatus(userId, Status.TODO);
     long inProgress = taskRepository.countByUserIdAndStatus(userId, Status.IN_PROGRESS);
     long done = taskRepository.countByUserIdAndStatus(userId, Status.DONE);
 
+    int percentDone = (total == 0) ? 0 : (int) Math.round(100.0 * done / total);
+
     stats.put("totalTasks", total);
     stats.put("todoTasks", todo);
     stats.put("inProgressTasks", inProgress);
     stats.put("doneTasks", done);
+    stats.put("percentDone", percentDone);
 
     return stats;
   }
@@ -199,5 +216,119 @@ public class TaskService {
   public Page<Task> getUpcomingTasks() {
     return taskRepository.findByUserIdAndDueDateIsNotNullOrderByDueDateAsc(
         userService.getCurrentUser().getId(), PageRequest.of(0, 5));
+  }
+
+  @Transactional
+  public void exportTasksToCSV(HttpServletResponse response) {
+    response.setContentType("text/csv; charset=UTF-8");
+    response.setHeader("Content-Disposition", "attachment; filename=\"tasks.csv\"");
+
+    User user = userService.getCurrentUser();
+    List<Task> tasks = taskRepository.findAllByUserId(user.getId());
+
+    try (OutputStreamWriter osw =
+            new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8);
+        CSVWriter writer =
+            new CSVWriter(
+                osw,
+                ';',
+                CSVWriter.NO_QUOTE_CHARACTER,
+                CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                CSVWriter.DEFAULT_LINE_END)) {
+      writer.writeNext(new String[] {"title", "description", "status", "dueDate", "categoryName"});
+      for (Task t : tasks) {
+        writer.writeNext(
+            new String[] {
+              t.getTitle() != null ? t.getTitle() : "",
+              t.getDescription() != null ? t.getDescription() : "",
+              t.getStatus() != null ? t.getStatus().name() : "",
+              t.getDueDate() != null ? t.getDueDate().toString() : "",
+              t.getCategory() != null ? t.getCategory().getName() : ""
+            });
+      }
+      writer.flush();
+    } catch (Exception ex) {
+      throw new RuntimeException("CSV export failed", ex);
+    }
+  }
+
+  @Transactional
+  public void importTasksFromCsv(MultipartFile file) {
+    User user = userService.getCurrentUser();
+    List<String> validationErrors = new ArrayList<>();
+    int rowNum = 1;
+    try (InputStreamReader isr =
+            new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+        CSVReader reader =
+            new CSVReaderBuilder(isr)
+                .withCSVParser(new com.opencsv.CSVParserBuilder().withSeparator(';').build())
+                .build()) {
+      String[] header = reader.readNext();
+      String[] row;
+      while ((row = reader.readNext()) != null) {
+        rowNum++;
+
+        CreateTaskRequest dto = new CreateTaskRequest();
+        dto.setTitle(row.length > 0 && row[0] != null && !row[0].isBlank() ? row[0] : null);
+        dto.setDescription(row.length > 1 && row[1] != null && !row[1].isBlank() ? row[1] : null);
+        dto.setStatus(
+            row.length > 2 && row[2] != null && !row[2].isBlank()
+                ? Status.valueOf(row[2])
+                : Status.TODO);
+        dto.setDueDate(
+            row.length > 3 && row[3] != null && !row[3].isBlank()
+                ? LocalDateTime.parse(row[3])
+                : null);
+
+        UUID categoryId = null;
+        if (row.length > 4 && row[4] != null && !row[4].isBlank()) {
+          Category category =
+              categoryRepository.findByNameAndUserId(row[4], user.getId()).orElse(null);
+          if (category != null) {
+            categoryId = category.getId();
+          }
+        }
+        dto.setCategoryId(categoryId);
+
+        Set<ConstraintViolation<CreateTaskRequest>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+          String err =
+              "Row "
+                  + rowNum
+                  + " ["
+                  + Arrays.toString(row)
+                  + "]: "
+                  + violations.stream()
+                      .map(ConstraintViolation::getMessage)
+                      .reduce((a, b) -> a + "; " + b)
+                      .orElse("");
+          validationErrors.add(err);
+          continue;
+        }
+
+        Task task = new Task();
+        task.setTitle(dto.getTitle());
+        task.setDescription(dto.getDescription());
+        task.setStatus(dto.getStatus());
+        task.setDueDate(dto.getDueDate());
+
+        if (categoryId != null) {
+          Category category = categoryRepository.findById(categoryId).orElse(null);
+          task.setCategory(category);
+        }
+        task.setUser(user);
+        taskRepository.save(task);
+      }
+
+      if (!validationErrors.isEmpty()) {
+        throw new RuntimeException(
+            "CSV import failed due to validation errors:\n" + String.join("\n", validationErrors));
+      }
+
+    } catch (CsvValidationException e) {
+      throw new RuntimeException("CSV validation failed: ", e);
+    } catch (Exception e) {
+      throw new RuntimeException("CSV import failed: ", e);
+    }
   }
 }

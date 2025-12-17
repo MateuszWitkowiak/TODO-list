@@ -26,7 +26,10 @@ public class SecurityConfig {
         .formLogin(form -> form.loginPage("/login").defaultSuccessUrl("/", true).permitAll())
         .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout").permitAll())
         .userDetailsService(customUserDetailsService)
-        .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+        .csrf(
+            csrf ->
+                csrf.ignoringRequestMatchers(
+                    "/h2-console/**", "/api/v1/tasks/import", "/api/v1/tasks/export"))
         .headers(headers -> headers.frameOptions().disable());
 
     return http.build();

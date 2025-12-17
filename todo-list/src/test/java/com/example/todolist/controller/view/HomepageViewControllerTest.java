@@ -28,11 +28,12 @@ class HomepageViewControllerTest {
   @Test
   @DisplayName("GET / should return index view with stats and upcomingTasks in model")
   void home_ReturnsIndexViewWithModelAttributes() throws Exception {
-    Map<String, Long> stats = new HashMap<>();
+    Map<String, Object> stats = new HashMap<>();
     stats.put("totalTasks", 5L);
     stats.put("doneTasks", 2L);
     stats.put("todoTasks", 2L);
     stats.put("inProgressTasks", 1L);
+    stats.put("percentDone", 40);
 
     when(taskService.getStats()).thenReturn(stats);
     when(taskService.getUpcomingTasks())

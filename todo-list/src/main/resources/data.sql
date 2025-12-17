@@ -1,19 +1,15 @@
--- Hasła to "password123"
 INSERT INTO users (id, email, password, role) VALUES (CAST('11111111-1111-1111-1111-111111111111' AS UUID), 'jan.kowalski@example.com', '$2a$12$jAgEKttEoR3ics73N6ABVeDc8cFOQcdoK69IffWAIZGWO9Aty5KlS', 'USER');
 INSERT INTO users (id, email, password, role) VALUES (CAST('22222222-2222-2222-2222-222222222222' AS UUID), 'anna.nowak@example.com', '$2a$12$jAgEKttEoR3ics73N6ABVeDc8cFOQcdoK69IffWAIZGWO9Aty5KlS', 'USER');
 INSERT INTO users (id, email, password, role) VALUES (CAST('33333333-3333-3333-3333-333333333333' AS UUID), 'admin@example.com', '$2a$12$jAgEKttEoR3ics73N6ABVeDc8cFOQcdoK69IffWAIZGWO9Aty5KlS', 'ADMIN');
 
--- Kategorie dla Jana Kowalskiego
 INSERT INTO categories (id, name, color, user_id) VALUES (CAST('a1111111-1111-1111-1111-111111111111' AS UUID), 'Praca', '#FF5733', CAST('11111111-1111-1111-1111-111111111111' AS UUID));
 INSERT INTO categories (id, name, color, user_id) VALUES (CAST('a1111111-1111-1111-1111-111111111112' AS UUID), 'Dom', '#33FF57', CAST('11111111-1111-1111-1111-111111111111' AS UUID));
 INSERT INTO categories (id, name, color, user_id) VALUES (CAST('a1111111-1111-1111-1111-111111111113' AS UUID), 'Hobby', '#3357FF', CAST('11111111-1111-1111-1111-111111111111' AS UUID));
 
--- Kategorie dla Anny Nowak
 INSERT INTO categories (id, name, color, user_id) VALUES (CAST('a2222222-2222-2222-2222-222222222221' AS UUID), 'Zakupy', '#FF33A1', CAST('22222222-2222-2222-2222-222222222222' AS UUID));
 INSERT INTO categories (id, name, color, user_id) VALUES (CAST('a2222222-2222-2222-2222-222222222222' AS UUID), 'Nauka', '#FFA533', CAST('22222222-2222-2222-2222-222222222222' AS UUID));
 INSERT INTO categories (id, name, color, user_id) VALUES (CAST('a2222222-2222-2222-2222-222222222223' AS UUID), 'Sport', '#33FFF5', CAST('22222222-2222-2222-2222-222222222222' AS UUID));
 
--- 20 tasków dla Jana Kowalskiego
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b1111111-1111-1111-1111-111111111111' AS UUID), 'Przygotować prezentację', 'Prezentacja na spotkanie z klientem', 'TODO', TIMESTAMP '2025-12-15 10:00:00', CAST('a1111111-1111-1111-1111-111111111111' AS UUID), CAST('11111111-1111-1111-1111-111111111111' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b1111111-1111-1111-1111-111111111112' AS UUID), 'Code review PR #234', 'Sprawdzić nowy feature w aplikacji', 'IN_PROGRESS', TIMESTAMP '2025-12-11 15:00:00', CAST('a1111111-1111-1111-1111-111111111111' AS UUID), CAST('11111111-1111-1111-1111-111111111111' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b1111111-1111-1111-1111-111111111113' AS UUID), 'Aktualizacja dokumentacji', 'Dodać nowe endpointy do API docs', 'TODO', TIMESTAMP '2025-12-14 12:00:00', CAST('a1111111-1111-1111-1111-111111111111' AS UUID), CAST('11111111-1111-1111-1111-111111111111' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
@@ -94,7 +90,6 @@ INSERT INTO tasks (id, title, description, status, due_date, category_id, user_i
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b1111173-1111-1111-1111-111111111179' AS UUID), 'Przeprowadzić audit', 'Bezpieczeństwo aplikacji - wstępny audit', 'TODO', TIMESTAMP '2026-02-20 11:00:00', CAST('a1111111-1111-1111-1111-111111111111' AS UUID), CAST('11111111-1111-1111-1111-111111111111' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b1111174-1111-1111-1111-111111111180' AS UUID), 'Przygotować ankietę', 'Ankieta satysfakcji użytkowników', 'TODO', TIMESTAMP '2026-02-12 08:00:00', CAST('a1111111-1111-1111-1111-111111111113' AS UUID), CAST('11111111-1111-1111-1111-111111111111' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
--- 20 tasków dla Anny Nowak
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b2222221-2222-2222-2222-222222222221' AS UUID), 'Kupić mleko', 'Mleko 2% 2 litry', 'TODO', TIMESTAMP '2025-12-11 18:00:00', CAST('a2222222-2222-2222-2222-222222222221' AS UUID), CAST('22222222-2222-2222-2222-222222222222' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b2222222-2222-2222-2222-222222222222' AS UUID), 'Kupić chleb', 'Chleb razowy', 'TODO', TIMESTAMP '2025-12-11 18:00:00', CAST('a2222222-2222-2222-2222-222222222221' AS UUID), CAST('22222222-2222-2222-2222-222222222222' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO tasks (id, title, description, status, due_date, category_id, user_id, created_at, updated_at) VALUES (CAST('b2222223-2222-2222-2222-222222222223' AS UUID), 'Kupić warzywa', 'Pomidory, ogórki, papryka', 'IN_PROGRESS', TIMESTAMP '2025-12-11 18:00:00', CAST('a2222222-2222-2222-2222-222222222221' AS UUID), CAST('22222222-2222-2222-2222-222222222222' AS UUID), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
