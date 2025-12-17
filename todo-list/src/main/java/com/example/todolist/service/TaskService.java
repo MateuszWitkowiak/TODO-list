@@ -12,6 +12,14 @@ import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
 import com.example.todolist.service.filter.TaskFilter;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvValidationException;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -23,6 +31,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class TaskService {
@@ -199,5 +208,82 @@ public class TaskService {
   public Page<Task> getUpcomingTasks() {
     return taskRepository.findByUserIdAndDueDateIsNotNullOrderByDueDateAsc(
         userService.getCurrentUser().getId(), PageRequest.of(0, 5));
+  }
+
+  @Transactional
+  public void writeTasksCsvToResponse(HttpServletResponse response) {
+    response.setContentType("text/csv; charset=UTF-8");
+    response.setHeader("Content-Disposition", "attachment; filename=\"tasks.csv\"");
+
+    User user = userService.getCurrentUser();
+    List<Task> tasks = taskRepository.findAllByUserId(user.getId());
+
+    try (OutputStreamWriter osw =
+            new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8);
+        CSVWriter writer =
+            new CSVWriter(
+                osw,
+                ';',
+                CSVWriter.NO_QUOTE_CHARACTER,
+                CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                CSVWriter.DEFAULT_LINE_END)) {
+      writer.writeNext(new String[] {"title", "description", "status", "dueDate", "categoryName"});
+      for (Task t : tasks) {
+        writer.writeNext(
+            new String[] {
+              t.getTitle() != null ? t.getTitle() : "",
+              t.getDescription() != null ? t.getDescription() : "",
+              t.getStatus() != null ? t.getStatus().name() : "",
+              t.getDueDate() != null ? t.getDueDate().toString() : "",
+              t.getCategory() != null ? t.getCategory().getName() : ""
+            });
+      }
+      writer.flush();
+    } catch (Exception ex) {
+      throw new RuntimeException("CSV export failed", ex);
+    }
+  }
+
+  @Transactional
+  public void importTasksFromCsv(MultipartFile file) {
+    User user = userService.getCurrentUser();
+
+    try (InputStreamReader isr =
+            new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+         CSVReader reader = new CSVReaderBuilder(isr)
+                 .withCSVParser(new com.opencsv.CSVParserBuilder().withSeparator(';').build())
+                 .build()) {
+      String[] row;
+      boolean skipHeader = true;
+      while ((row = reader.readNext()) != null) {
+        if (skipHeader) {
+          skipHeader = false;
+          continue;
+        }
+        Task task = new Task();
+        task.setTitle(row.length > 0 ? row[0] : null);
+        task.setDescription(row.length > 1 ? row[1] : null);
+        task.setStatus(
+            row.length > 2 && row[2] != null && !row[2].isBlank()
+                ? Status.valueOf(row[2])
+                : Status.TODO);
+        task.setDueDate(
+            row.length > 3 && row[3] != null && !row[3].isBlank()
+                ? LocalDateTime.parse(row[3])
+                : null);
+
+        if (row.length > 4 && row[4] != null && !row[4].isBlank()) {
+          Category category =
+              categoryRepository.findByNameAndUserId(row[4], user.getId()).orElse(null);
+          task.setCategory(category);
+        }
+        task.setUser(user);
+        taskRepository.save(task);
+      }
+    } catch (CsvValidationException e) {
+      throw new RuntimeException("CSV validation failed: ", e);
+    } catch (Exception e) {
+      throw new RuntimeException("CSV import failed: ", e);
+    }
   }
 }
