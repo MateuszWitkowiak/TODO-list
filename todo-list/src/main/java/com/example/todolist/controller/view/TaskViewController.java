@@ -29,18 +29,12 @@ public class TaskViewController {
 
   private final TaskService taskService;
   private final CategoryService categoryService;
-  private final TaskRepository taskRepository;
-  private final UserService userService;
 
   public TaskViewController(
       TaskService taskService,
-      CategoryService categoryService,
-      UserService userService,
-      TaskRepository taskRepository) {
+      CategoryService categoryService) {
     this.taskService = taskService;
     this.categoryService = categoryService;
-    this.taskRepository = taskRepository;
-    this.userService = userService;
   }
 
   @GetMapping("/add")
