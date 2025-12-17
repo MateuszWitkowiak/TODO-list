@@ -86,7 +86,7 @@ public class TaskService {
       if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
         status = Status.valueOf(filter.getStatus());
       }
-    } catch (IllegalArgumentException ignored) {
+    } catch (IllegalArgumentException ex) {
       log.warn("Invalid status filter '{}', skipping status filter", filter.getStatus());
     }
 
@@ -250,9 +250,10 @@ public class TaskService {
 
     try (InputStreamReader isr =
             new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
-         CSVReader reader = new CSVReaderBuilder(isr)
-                 .withCSVParser(new com.opencsv.CSVParserBuilder().withSeparator(';').build())
-                 .build()) {
+        CSVReader reader =
+            new CSVReaderBuilder(isr)
+                .withCSVParser(new com.opencsv.CSVParserBuilder().withSeparator(';').build())
+                .build()) {
       String[] row;
       boolean skipHeader = true;
       while ((row = reader.readNext()) != null) {

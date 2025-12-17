@@ -8,13 +8,16 @@ import com.example.todolist.dto.response.GetTaskResponse;
 import com.example.todolist.entity.Task;
 import com.example.todolist.service.TaskService;
 import com.example.todolist.service.filter.TaskFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
@@ -72,5 +75,20 @@ public class TaskApiController {
   public ResponseEntity<Void> deleteTask(@PathVariable("id") UUID id) {
     taskService.deleteTaskById(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/export")
+  public void exportTasksCsv(HttpServletResponse response) {
+    taskService.writeTasksCsvToResponse(response);
+  }
+
+  @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<String> importTasksCsv(@RequestParam("file") MultipartFile file) {
+    try {
+      taskService.importTasksFromCsv(file);
+      return ResponseEntity.ok("Import zakończony sukcesem!");
+    } catch (Exception ex) {
+      return ResponseEntity.badRequest().body("Błąd importu CSV: " + ex.getMessage());
+    }
   }
 }

@@ -4,10 +4,8 @@ import com.example.todolist.dto.request.CreateTaskRequest;
 import com.example.todolist.dto.request.UpdateTaskRequest;
 import com.example.todolist.entity.Category;
 import com.example.todolist.entity.Task;
-import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.service.CategoryService;
 import com.example.todolist.service.TaskService;
-import com.example.todolist.service.UserService;
 import com.example.todolist.service.filter.TaskFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -30,9 +28,7 @@ public class TaskViewController {
   private final TaskService taskService;
   private final CategoryService categoryService;
 
-  public TaskViewController(
-      TaskService taskService,
-      CategoryService categoryService) {
+  public TaskViewController(TaskService taskService, CategoryService categoryService) {
     this.taskService = taskService;
     this.categoryService = categoryService;
   }
