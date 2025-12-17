@@ -17,7 +17,7 @@ spec:
       containers:
         - name: task-manager
           image: mateuszwitkowiak/task-manager:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           readinessProbe:
