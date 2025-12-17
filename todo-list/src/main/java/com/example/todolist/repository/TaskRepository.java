@@ -36,8 +36,6 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
   List<Task> findAllByUserId(UUID userId);
 
-  Page<Task> findByUserIdAndTitleContainingIgnoreCase(UUID userId, String title, Pageable pageable);
-
   long countByUserId(UUID userId);
 
   long countByUserIdAndStatus(UUID userId, Status status);

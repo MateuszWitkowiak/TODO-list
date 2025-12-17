@@ -157,39 +157,6 @@ class TaskRepositoryTest {
   }
 
   @Test
-  @DisplayName("findByUserIdAndTitleContainingIgnoreCase should filter tasks by title")
-  void findByUserIdAndTitleContainingIgnoreCase_ShouldReturnFilteredResults() {
-    Task t1 = new Task();
-    t1.setTitle("Buy Milk");
-    t1.setStatus(Status.TODO);
-    t1.setUser(user1);
-    t1.setCategory(cat1);
-    taskRepository.save(t1);
-
-    Task t2 = new Task();
-    t2.setTitle("milk chocolate");
-    t2.setStatus(Status.TODO);
-    t2.setUser(user1);
-    t2.setCategory(cat1);
-    taskRepository.save(t2);
-
-    Task t3 = new Task();
-    t3.setTitle("Other task");
-    t3.setStatus(Status.TODO);
-    t3.setUser(user1);
-    t3.setCategory(cat1);
-    taskRepository.save(t3);
-
-    Page<Task> result =
-        taskRepository.findByUserIdAndTitleContainingIgnoreCase(
-            user1.getId(), "milk", PageRequest.of(0, 10));
-
-    assertEquals(2, result.getTotalElements());
-    assertTrue(
-        result.getContent().stream().allMatch(t -> t.getTitle().toLowerCase().contains("milk")));
-  }
-
-  @Test
   @DisplayName("countByUserId should return correct task count for user")
   void countByUserId_ShouldReturnCorrectCount() {
     Task t1 = new Task();
