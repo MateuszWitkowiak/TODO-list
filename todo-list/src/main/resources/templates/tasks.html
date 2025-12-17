@@ -12,8 +12,13 @@
     <h1>Here will be all tasks :)</h1>
 
     <form th:action="@{/tasks}" method="get" class="mb-3 d-flex align-items-center content-wrapper" style="gap:8px;">
+        <input type="hidden" name="page" value="0"/>
+        <input type="hidden" name="size" th:value="${pageSize}"/>
         <input type="hidden" name="sort" th:value="${currentSort}">
         <input type="hidden" name="direction" th:value="${currentDirection}">
+        <input type="text" name="title" class="form-control" placeholder="Search by title..." maxlength="30" style="width:180px;"
+               th:value="${searchTitle}">
+
         <label class="me-2 mb-0 fw-bold">Status:</label>
         <select name="status" class="form-select me-2" style="width: auto;">
             <option value="" th:selected="${selectedStatus == null or selectedStatus == ''}">All</option>
@@ -40,17 +45,15 @@
         <input type="date" name="dueBefore" class="form-control me-2" style="width:160px;"
                th:value="${dueBefore}"/>
 
-        <button type="submit" class="btn btn-primary">Filter</button>
+        <button type="submit" class="btn btn-primary">Filter / Search</button>
     </form>
-    <form th:action="@{/tasks/tasksByTitle}" method="get" class="align-items-center mb-3">
-        <input type="text" name="title" class="form-control" placeholder="Search by title..." th:value="${searchTitle}">
-    </form>
+
     <table class="table">
         <thead>
         <tr>
             <th>
                 <a th:with="nextDir=${currentSort == 'title' and currentDirection == 'asc' ? 'desc' : 'asc'}"
-                   th:href="@{/tasks(sort='title', direction=${nextDir}, status=${selectedStatus})}">
+                   th:href="@{/tasks(sort='title', direction=${nextDir}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=0, size=${pageSize})}">
                     Title
                     <span th:if="${currentSort == 'title'}"
                           th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
@@ -59,7 +62,7 @@
 
             <th>
                 <a th:with="nextDir=${currentSort == 'description' and currentDirection == 'asc' ? 'desc' : 'asc'}"
-                   th:href="@{/tasks(sort='description', direction=${nextDir}, status=${selectedStatus})}">
+                   th:href="@{/tasks(sort='description', direction=${nextDir}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=0, size=${pageSize})}">
                     Description
                     <span th:if="${currentSort == 'description'}"
                           th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
@@ -68,7 +71,7 @@
 
             <th>
                 <a th:with="nextDir=${currentSort == 'category.name' and currentDirection == 'asc' ? 'desc' : 'asc'}"
-                   th:href="@{/tasks(sort='category.name', direction=${nextDir}, status=${selectedStatus})}">
+                   th:href="@{/tasks(sort='category.name', direction=${nextDir}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=0, size=${pageSize})}">
                     Category
                     <span th:if="${currentSort == 'category.name'}"
                           th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
@@ -77,7 +80,7 @@
 
             <th>
                 <a th:with="nextDir=${currentSort == 'dueDate' and currentDirection == 'asc' ? 'desc' : 'asc'}"
-                   th:href="@{/tasks(sort='dueDate', direction=${nextDir}, status=${selectedStatus})}">
+                   th:href="@{/tasks(sort='dueDate', direction=${nextDir}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=0, size=${pageSize})}">
                     Due date
                     <span th:if="${currentSort == 'dueDate'}"
                           th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
@@ -86,7 +89,7 @@
 
             <th>
                 <a th:with="nextDir=${currentSort == 'status' and currentDirection == 'asc' ? 'desc' : 'asc'}"
-                   th:href="@{/tasks(sort='status', direction=${nextDir}, status=${selectedStatus})}">
+                   th:href="@{/tasks(sort='status', direction=${nextDir}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=0, size=${pageSize})}">
                     Status
                     <span th:if="${currentSort == 'status'}"
                           th:text="${currentDirection == 'asc' ? '▲' : '▼'}"></span>
@@ -118,6 +121,35 @@
     </table>
 
     <p th:if="${#lists.isEmpty(tasks)}">No tasks found.</p>
+
+    <!-- Pagination -->
+    <div th:if="${page != null and page.totalPages > 1}" class="d-flex justify-content-center mt-3">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/tasks(sort=${currentSort}, direction=${currentDirection}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=${page.number - 1}, size=${pageSize})}">
+                        Previous
+                    </a>
+                </li>
+
+                <li th:each="p : ${pageNumbers}" class="page-item"
+                    th:classappend="${p == page.number} ? 'active'">
+                    <a class="page-link"
+                       th:text="${p + 1}"
+                       th:href="@{/tasks(sort=${currentSort}, direction=${currentDirection}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=${p}, size=${pageSize})}"></a>
+                </li>
+
+                <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/tasks(sort=${currentSort}, direction=${currentDirection}, title=${searchTitle}, status=${selectedStatus}, categoryId=${selectedCategory}, dueAfter=${dueAfter}, dueBefore=${dueBefore}, page=${page.number + 1}, size=${pageSize})}">
+                        Next
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
 </div>
 </body>
 </html>

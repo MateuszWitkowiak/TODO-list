@@ -8,166 +8,245 @@ import com.example.todolist.entity.Task;
 import com.example.todolist.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-
 @DataJpaTest
+@DisplayName("TaskRepository tests")
 class TaskRepositoryTest {
 
-  @Autowired TaskRepository taskRepository;
+    @Autowired TaskRepository taskRepository;
+    @Autowired CategoryRepository categoryRepository;
+    @Autowired UserRepository userRepository;
 
-  @Autowired CategoryRepository categoryRepository;
+    private User user1;
+    private User user2;
+    private Category cat1;
+    private Category cat2;
 
-  @Autowired UserRepository userRepository;
+    @BeforeEach
+    void setUp() {
+        user1 = new User();
+        user1.setEmail("user1@example.com");
+        user1.setPassword("pass");
+        user1.setRole("USER");
+        user1 = userRepository.save(user1);
 
-  // ---------- Helpers ------------
+        user2 = new User();
+        user2.setEmail("user2@example.com");
+        user2.setPassword("pass");
+        user2.setRole("USER");
+        user2 = userRepository.save(user2);
 
-  private User createUser(String email) {
-    User user = new User();
-    user.setEmail(email);
-    user.setPassword("pass");
-    user.setRole("USER");
-    return userRepository.save(user);
-  }
+        cat1 = new Category();
+        cat1.setName("Work");
+        cat1.setColor("#FFFFFF");
+        cat1.setUser(user1);
+        cat1 = categoryRepository.save(cat1);
 
-  private Category createCategory(String name, User user) {
-    Category c = new Category();
-    c.setName(name);
-    c.setColor("#FFFFFF");
-    c.setUser(user);
-    return categoryRepository.save(c);
-  }
+        cat2 = new Category();
+        cat2.setName("Home");
+        cat2.setColor("#FFFFFF");
+        cat2.setUser(user2);
+        cat2 = categoryRepository.save(cat2);
+    }
 
-  private Task createTask(String title, User user, Category category) {
-    Task t = new Task();
-    t.setTitle(title);
-    t.setStatus(Status.TODO);
-    t.setUser(user);
-    t.setCategory(category);
-    return taskRepository.save(t);
-  }
+    @Test
+    @DisplayName("searchTasksByFilter should return tasks matching keyword")
+    void searchTasksByTitle_shouldReturnMatchingTasks() {
+        Task t1 = new Task();
+        t1.setTitle("Shopping list");
+        t1.setStatus(Status.TODO);
+        t1.setUser(user1);
+        t1.setCategory(cat1);
+        taskRepository.save(t1);
 
-  // ---------- Tests ------------
+        Task t2 = new Task();
+        t2.setTitle("Shop for car parts");
+        t2.setStatus(Status.TODO);
+        t2.setUser(user1);
+        t2.setCategory(cat1);
+        taskRepository.save(t2);
 
-  @Test
-  void searchTasksByTitle_shouldReturnMatchingTasks() {
-    User user = createUser("test@example.com");
-    Category cat = createCategory("Work", user);
+        Task t3 = new Task();
+        t3.setTitle("Random task");
+        t3.setStatus(Status.TODO);
+        t3.setUser(user1);
+        t3.setCategory(cat1);
+        taskRepository.save(t3);
 
-    createTask("Shopping list", user, cat);
-    createTask("Shop for car parts", user, cat);
-    createTask("Random task", user, cat);
+        Page<Task> result = taskRepository.searchTasksByFilter(
+                user1.getId(),
+                "shop",
+                null,
+                null,
+                null,
+                null,
+                PageRequest.of(0, 10)
+        );
 
-    Page<Task> result =
-        taskRepository.searchTasksByTitle(user.getId(), "shop", PageRequest.of(0, 10));
+        assertEquals(2, result.getTotalElements());
+        assertTrue(result.getContent().stream().allMatch(t -> t.getTitle().toLowerCase().contains("shop")));
+    }
 
-    assertEquals(2, result.getTotalElements());
-    assertTrue(
-        result.getContent().stream().allMatch(t -> t.getTitle().toLowerCase().contains("shop")));
-  }
+    @Test
+    @DisplayName("findAllByUserId should return tasks for user")
+    void findAllByUserId_ShouldReturnTasksForUser() {
+        Task t1 = new Task();
+        t1.setTitle("Task A");
+        t1.setStatus(Status.TODO);
+        t1.setUser(user1);
+        t1.setCategory(cat1);
+        taskRepository.save(t1);
 
-  @Test
-  void findAllByUserId_ShouldReturnTasksForUser() {
-    User user1 = createUser("user1@example.com");
-    User user2 = createUser("user2@example.com");
+        Task t2 = new Task();
+        t2.setTitle("Task B");
+        t2.setStatus(Status.TODO);
+        t2.setUser(user1);
+        t2.setCategory(cat1);
+        taskRepository.save(t2);
 
-    Category cat1 = createCategory("Work", user1);
-    Category cat2 = createCategory("Home", user2);
+        Task t3 = new Task();
+        t3.setTitle("Task C");
+        t3.setStatus(Status.TODO);
+        t3.setUser(user2);
+        t3.setCategory(cat2);
+        taskRepository.save(t3);
 
-    createTask("Task A", user1, cat1);
-    createTask("Task B", user1, cat1);
-    createTask("Task C", user2, cat2);
+        List<Task> tasks = taskRepository.findAllByUserId(user1.getId());
 
-    List<Task> tasks = taskRepository.findAllByUserId(user1.getId());
+        assertEquals(2, tasks.size());
+        assertTrue(tasks.stream().allMatch(t -> t.getUser().getId().equals(user1.getId())));
+    }
 
-    assertEquals(2, tasks.size());
-    assertTrue(tasks.stream().allMatch(t -> t.getUser().getId().equals(user1.getId())));
-  }
+    @Test
+    @DisplayName("findByUserIdAndDueDateIsNotNullOrderByDueDateAsc should return tasks sorted by due date")
+    void findByUserIdAndDueDateIsNotNullOrderByDueDateAsc_ShouldReturnSortedResults() {
+        Task t1 = new Task();
+        t1.setTitle("A");
+        t1.setStatus(Status.TODO);
+        t1.setUser(user1);
+        t1.setCategory(cat1);
+        t1.setDueDate(LocalDateTime.now().plusDays(5));
+        taskRepository.save(t1);
 
-  @Test
-  void findByUserIdAndDueDateIsNotNullOrderByDueDateAsc_ShouldReturnSortedResults() {
-    User user = createUser("sort@example.com");
-    Category cat = createCategory("Work", user);
+        Task t2 = new Task();
+        t2.setTitle("B");
+        t2.setStatus(Status.TODO);
+        t2.setUser(user1);
+        t2.setCategory(cat1);
+        t2.setDueDate(LocalDateTime.now().plusDays(1));
+        taskRepository.save(t2);
 
-    Task t1 = createTask("A", user, cat);
-    t1.setDueDate(LocalDateTime.now().plusDays(5));
-    taskRepository.save(t1);
+        Task t3 = new Task();
+        t3.setTitle("C");
+        t3.setStatus(Status.TODO);
+        t3.setUser(user1);
+        t3.setCategory(cat1);
+        t3.setDueDate(null);
+        taskRepository.save(t3);
 
-    Task t2 = createTask("B", user, cat);
-    t2.setDueDate(LocalDateTime.now().plusDays(1));
-    taskRepository.save(t2);
+        Page<Task> result = taskRepository.findByUserIdAndDueDateIsNotNullOrderByDueDateAsc(
+                user1.getId(), PageRequest.of(0, 5));
 
-    Task t3 = createTask("C", user, cat);
-    t3.setDueDate(null);
-    taskRepository.save(t3);
+        assertEquals(2, result.getTotalElements());
+        assertEquals("B", result.getContent().get(0).getTitle());
+        assertEquals("A", result.getContent().get(1).getTitle());
+    }
 
-    Page<Task> result =
-        taskRepository.findByUserIdAndDueDateIsNotNullOrderByDueDateAsc(
-            user.getId(), PageRequest.of(0, 5));
+    @Test
+    @DisplayName("findByUserIdAndTitleContainingIgnoreCase should filter tasks by title")
+    void findByUserIdAndTitleContainingIgnoreCase_ShouldReturnFilteredResults() {
+        Task t1 = new Task();
+        t1.setTitle("Buy Milk");
+        t1.setStatus(Status.TODO);
+        t1.setUser(user1);
+        t1.setCategory(cat1);
+        taskRepository.save(t1);
 
-    assertEquals(2, result.getTotalElements());
-    assertEquals("B", result.getContent().get(0).getTitle());
-    assertEquals("A", result.getContent().get(1).getTitle());
-  }
+        Task t2 = new Task();
+        t2.setTitle("milk chocolate");
+        t2.setStatus(Status.TODO);
+        t2.setUser(user1);
+        t2.setCategory(cat1);
+        taskRepository.save(t2);
 
-  @Test
-  void findByUserIdAndTitleContainingIgnoreCase_ShouldReturnFilteredResults() {
-    User user = createUser("filter@example.com");
-    Category cat = createCategory("Work", user);
+        Task t3 = new Task();
+        t3.setTitle("Other task");
+        t3.setStatus(Status.TODO);
+        t3.setUser(user1);
+        t3.setCategory(cat1);
+        taskRepository.save(t3);
 
-    createTask("Buy Milk", user, cat);
-    createTask("milk chocolate", user, cat);
-    createTask("Other task", user, cat);
+        Page<Task> result = taskRepository.findByUserIdAndTitleContainingIgnoreCase(
+                user1.getId(), "milk", PageRequest.of(0, 10));
 
-    Page<Task> result =
-        taskRepository.findByUserIdAndTitleContainingIgnoreCase(
-            user.getId(), "milk", PageRequest.of(0, 10));
+        assertEquals(2, result.getTotalElements());
+        assertTrue(result.getContent().stream().allMatch(t -> t.getTitle().toLowerCase().contains("milk")));
+    }
 
-    assertEquals(2, result.getTotalElements());
-    assertTrue(
-        result.getContent().stream().allMatch(t -> t.getTitle().toLowerCase().contains("milk")));
-  }
+    @Test
+    @DisplayName("countByUserId should return correct task count for user")
+    void countByUserId_ShouldReturnCorrectCount() {
+        Task t1 = new Task();
+        t1.setTitle("A");
+        t1.setStatus(Status.TODO);
+        t1.setUser(user1);
+        t1.setCategory(cat1);
+        taskRepository.save(t1);
 
-  @Test
-  void countByUserId_ShouldReturnCorrectCount() {
-    User user1 = createUser("count1@example.com");
-    User user2 = createUser("count2@example.com");
-    Category c1 = createCategory("Work", user1);
-    Category c2 = createCategory("Home", user2);
+        Task t2 = new Task();
+        t2.setTitle("B");
+        t2.setStatus(Status.TODO);
+        t2.setUser(user1);
+        t2.setCategory(cat1);
+        taskRepository.save(t2);
 
-    createTask("A", user1, c1);
-    createTask("B", user1, c1);
-    createTask("C", user2, c2);
+        Task t3 = new Task();
+        t3.setTitle("C");
+        t3.setStatus(Status.TODO);
+        t3.setUser(user2);
+        t3.setCategory(cat2);
+        taskRepository.save(t3);
 
-    long count = taskRepository.countByUserId(user1.getId());
+        long count = taskRepository.countByUserId(user1.getId());
 
-    assertEquals(2, count);
-  }
+        assertEquals(2, count);
+    }
 
-  @Test
-  void countByUserIdAndStatus_ShouldReturnCorrectCount() {
-    User user = createUser("status@example.com");
-    Category cat = createCategory("Work", user);
+    @Test
+    @DisplayName("countByUserIdAndStatus should return correct count for status")
+    void countByUserIdAndStatus_ShouldReturnCorrectCount() {
+        Task t1 = new Task();
+        t1.setTitle("A");
+        t1.setStatus(Status.TODO);
+        t1.setUser(user1);
+        t1.setCategory(cat1);
+        taskRepository.save(t1);
 
-    Task t1 = createTask("A", user, cat);
-    t1.setStatus(Status.TODO);
-    taskRepository.save(t1);
+        Task t2 = new Task();
+        t2.setTitle("B");
+        t2.setStatus(Status.TODO);
+        t2.setUser(user1);
+        t2.setCategory(cat1);
+        taskRepository.save(t2);
 
-    Task t2 = createTask("B", user, cat);
-    t2.setStatus(Status.TODO);
-    taskRepository.save(t2);
+        Task t3 = new Task();
+        t3.setTitle("C");
+        t3.setStatus(Status.DONE);
+        t3.setUser(user1);
+        t3.setCategory(cat1);
+        taskRepository.save(t3);
 
-    Task t3 = createTask("C", user, cat);
-    t3.setStatus(Status.DONE);
-    taskRepository.save(t3);
+        long countTodo = taskRepository.countByUserIdAndStatus(user1.getId(), Status.TODO);
+        long countDone = taskRepository.countByUserIdAndStatus(user1.getId(), Status.DONE);
 
-    long countTodo = taskRepository.countByUserIdAndStatus(user.getId(), Status.TODO);
-    long countDone = taskRepository.countByUserIdAndStatus(user.getId(), Status.DONE);
-
-    assertEquals(2, countTodo);
-    assertEquals(1, countDone);
-  }
+        assertEquals(2, countTodo);
+        assertEquals(1, countDone);
+    }
 }

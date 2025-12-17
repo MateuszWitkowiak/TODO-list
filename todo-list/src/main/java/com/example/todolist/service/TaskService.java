@@ -11,19 +11,15 @@ import com.example.todolist.exception.TaskNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
-import java.text.Collator;
-import java.time.LocalDate;
+import com.example.todolist.service.filter.TaskFilter;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.Comparator;
-import java.util.Locale;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,77 +56,67 @@ public class TaskService {
   }
 
   @Transactional(readOnly = true)
-  public List<Task> getAllTasks(
-      String sort,
-      String direction,
-      String status,
-      UUID categoryId,
-      LocalDate dueAfter,
-      LocalDate dueBefore) {
-
+  public Page<Task> getAllTasks(TaskFilter filter) {
     UUID userId = userService.getCurrentUser().getId();
+    int page = Math.max(filter.getPage(), 0);
+    int size = Math.max(filter.getSize(), 1);
 
-    List<Task> tasks = taskRepository.findAllByUserId(userId);
+    String sortProperty =
+        (filter.getSort() == null || filter.getSort().isBlank()) ? "title" : filter.getSort();
+    Sort.Direction dir =
+        "desc".equalsIgnoreCase(filter.getDirection()) ? Sort.Direction.DESC : Sort.Direction.ASC;
+    Sort sortObj = Sort.by(dir, sortProperty);
+    PageRequest pageRequest = PageRequest.of(page, size, sortObj);
 
-    Stream<Task> stream = tasks.stream();
-
-    if (status != null && !status.isBlank()) {
-      try {
-        Status enumStatus = Status.valueOf(status);
-        stream = stream.filter(t -> t.getStatus() == enumStatus);
-      } catch (IllegalArgumentException ignored) {
-        log.warn("Invalid status filter '{}', skipping status filter", status);
+    LocalDateTime dueAfter =
+        filter.getDueAfter() != null ? filter.getDueAfter().atStartOfDay() : null;
+    LocalDateTime dueBefore =
+        filter.getDueBefore() != null ? filter.getDueBefore().atTime(LocalTime.MAX) : null;
+    Status status = null;
+    try {
+      if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
+        status = Status.valueOf(filter.getStatus());
       }
+    } catch (IllegalArgumentException ignored) {
+      log.warn("Invalid status filter '{}', skipping status filter", filter.getStatus());
     }
 
-    if (categoryId != null) {
-      stream =
-          stream.filter(t -> t.getCategory() != null && categoryId.equals(t.getCategory().getId()));
+    return taskRepository.searchTasksByFilter(
+        userId, null, status, filter.getCategoryId(), dueAfter, dueBefore, pageRequest);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<Task> searchTasksByTitle(TaskFilter filter) {
+    UUID userId = userService.getCurrentUser().getId();
+    int page = Math.max(filter.getPage(), 0);
+    int size = Math.max(filter.getSize(), 1);
+
+    String keyword =
+        (filter.getTitle() != null && !filter.getTitle().isBlank()) ? filter.getTitle() : "";
+
+    String sortProperty =
+        (filter.getSort() == null || filter.getSort().isBlank()) ? "title" : filter.getSort();
+    Sort.Direction dir =
+        "desc".equalsIgnoreCase(filter.getDirection()) ? Sort.Direction.DESC : Sort.Direction.ASC;
+    Sort sortObj = Sort.by(dir, sortProperty);
+
+    PageRequest pageRequest = PageRequest.of(page, size, sortObj);
+
+    LocalDateTime dueAfter =
+        filter.getDueAfter() != null ? filter.getDueAfter().atStartOfDay() : null;
+    LocalDateTime dueBefore =
+        filter.getDueBefore() != null ? filter.getDueBefore().atTime(LocalTime.MAX) : null;
+    Status status = null;
+    try {
+      if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
+        status = Status.valueOf(filter.getStatus());
+      }
+    } catch (IllegalArgumentException ignored) {
+      log.warn("Invalid status filter '{}', skipping status filter", filter.getStatus());
     }
 
-    if (dueAfter != null) {
-      LocalDateTime from = dueAfter.atStartOfDay();
-      stream = stream.filter(t -> t.getDueDate() != null && !t.getDueDate().isBefore(from));
-    }
-
-    if (dueBefore != null) {
-      LocalDateTime to = dueBefore.atTime(LocalTime.MAX);
-      stream = stream.filter(t -> t.getDueDate() != null && !t.getDueDate().isAfter(to));
-    }
-
-    List<Task> filtered = stream.collect(Collectors.toList());
-
-    Collator polishCollator = Collator.getInstance(new Locale("pl", "PL"));
-    polishCollator.setStrength(Collator.PRIMARY);
-
-    Comparator<Task> comparator;
-    switch (sort) {
-      case "description" ->
-          comparator =
-              Comparator.comparing(Task::getDescription, Comparator.nullsLast(polishCollator));
-      case "dueDate" ->
-          comparator =
-              Comparator.comparing(
-                  Task::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()));
-      case "status" ->
-          comparator =
-              Comparator.comparing(
-                  Task::getStatus, Comparator.nullsLast(Comparator.naturalOrder()));
-      case "category.name" ->
-          comparator =
-              Comparator.comparing(
-                  (Task t) -> t.getCategory() != null ? t.getCategory().getName() : null,
-                  Comparator.nullsLast(polishCollator));
-      default ->
-          comparator = Comparator.comparing(Task::getTitle, Comparator.nullsLast(polishCollator));
-    }
-
-    if ("desc".equalsIgnoreCase(direction)) {
-      comparator = comparator.reversed();
-    }
-
-    filtered.sort(comparator);
-    return filtered;
+    return taskRepository.searchTasksByFilter(
+        userId, keyword, status, filter.getCategoryId(), dueAfter, dueBefore, pageRequest);
   }
 
   @Transactional(readOnly = true)
@@ -138,14 +124,6 @@ public class TaskService {
     return taskRepository
         .findById(taskId)
         .orElseThrow(() -> new TaskNotFoundException("Id", taskId));
-  }
-
-  @Transactional(readOnly = true)
-  public List<Task> searchTasksByTitle(String keyword, int page, int size) {
-    UUID userId = userService.getCurrentUser().getId();
-    return taskRepository
-        .searchTasksByTitle(userId, keyword, PageRequest.of(page, size))
-        .getContent();
   }
 
   @Transactional

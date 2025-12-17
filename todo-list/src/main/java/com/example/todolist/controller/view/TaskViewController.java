@@ -6,11 +6,13 @@ import com.example.todolist.entity.Category;
 import com.example.todolist.entity.Task;
 import com.example.todolist.service.CategoryService;
 import com.example.todolist.service.TaskService;
+import com.example.todolist.service.filter.TaskFilter;
 import jakarta.validation.Valid;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.format.annotation.DateTimeFormat;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -52,43 +54,35 @@ public class TaskViewController {
   }
 
   @GetMapping
-  public String showTasks(
-      @RequestParam(name = "sort", defaultValue = "title") String sort,
-      @RequestParam(name = "direction", defaultValue = "asc") String direction,
-      @RequestParam(name = "status", required = false) String status,
-      @RequestParam(name = "categoryId", required = false) UUID categoryId,
-      @RequestParam(name = "dueAfter", required = false)
-          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate dueAfter,
-      @RequestParam(name = "dueBefore", required = false)
-          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate dueBefore,
-      Model model) {
-    List<Task> tasks =
-        taskService.getAllTasks(sort, direction, status, categoryId, dueAfter, dueBefore);
+  public String showTasks(@ModelAttribute TaskFilter taskFilter, Model model) {
+    Page<Task> taskPage;
+
+    if (taskFilter.getTitle() != null && !taskFilter.getTitle().isBlank()) {
+      taskPage = taskService.searchTasksByTitle(taskFilter);
+    } else {
+      taskPage = taskService.getAllTasks(taskFilter);
+    }
+
     List<Category> categories = categoryService.findAllCategories();
 
-    model.addAttribute("tasks", tasks);
-    model.addAttribute("currentSort", sort);
-    model.addAttribute("currentDirection", direction.toLowerCase());
-    model.addAttribute("selectedStatus", status);
-    model.addAttribute("selectedCategory", categoryId);
+    model.addAttribute("tasks", taskPage.getContent());
+    model.addAttribute("page", taskPage);
+    model.addAttribute(
+        "pageNumbers",
+        IntStream.range(0, taskPage.getTotalPages()).boxed().collect(Collectors.toList()));
+    model.addAttribute("currentPage", taskPage.getNumber());
+    model.addAttribute("pageSize", taskPage.getSize());
+
+    model.addAttribute("currentSort", taskFilter.getSort());
+    model.addAttribute(
+        "currentDirection",
+        (taskFilter.getDirection() != null ? taskFilter.getDirection().toLowerCase() : ""));
+    model.addAttribute("selectedStatus", taskFilter.getStatus());
+    model.addAttribute("selectedCategory", taskFilter.getCategoryId());
     model.addAttribute("categories", categories);
-
-    model.addAttribute("dueAfter", dueAfter);
-    model.addAttribute("dueBefore", dueBefore);
-
-    return "tasks";
-  }
-
-  @GetMapping("/tasksByTitle")
-  public String showTasksByTitle(
-      @RequestParam(name = "title", required = false) String title, Model model) {
-    List<Task> tasks = taskService.searchTasksByTitle(title, 0, 50);
-    List<Category> categories = categoryService.findAllCategories();
-    model.addAttribute("tasks", tasks);
-    model.addAttribute("searchTitle", title);
-    model.addAttribute("categories", categories);
+    model.addAttribute("dueAfter", taskFilter.getDueAfter());
+    model.addAttribute("dueBefore", taskFilter.getDueBefore());
+    model.addAttribute("searchTitle", taskFilter.getTitle());
 
     return "tasks";
   }

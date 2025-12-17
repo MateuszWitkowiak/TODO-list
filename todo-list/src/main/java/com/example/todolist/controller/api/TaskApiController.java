@@ -7,9 +7,11 @@ import com.example.todolist.dto.response.CreateTaskResponse;
 import com.example.todolist.dto.response.GetTaskResponse;
 import com.example.todolist.entity.Task;
 import com.example.todolist.service.TaskService;
+import com.example.todolist.service.filter.TaskFilter;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,13 +43,14 @@ public class TaskApiController {
   }
 
   @GetMapping("/search")
-  public ResponseEntity<List<GetTaskResponse>> searchTasks(
-      @RequestParam("keyword") String keyword,
-      @RequestParam(value = "page", defaultValue = "0") int page,
-      @RequestParam(value = "size", defaultValue = "10") int size) {
-    List<Task> tasks = taskService.searchTasksByTitle(keyword, page, size);
-    List<GetTaskResponse> response = taskMapper.mapToGetTaskResponse(tasks);
-    return ResponseEntity.ok(response);
+  public ResponseEntity<Page<GetTaskResponse>> searchTasks(
+      @ModelAttribute TaskFilter filter, @RequestParam("keyword") String keyword) {
+    filter.setTitle(keyword);
+
+    Page<Task> tasks = taskService.searchTasksByTitle(filter);
+    Page<GetTaskResponse> responsePage = taskMapper.mapToGetTaskResponse(tasks);
+
+    return ResponseEntity.ok(responsePage);
   }
 
   @PostMapping

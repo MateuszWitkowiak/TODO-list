@@ -17,7 +17,7 @@
             <strong>Category:</strong>
             <span th:if="${task.category != null and task.category.color != null}"
                   th:text="${task.category.name}"
-                  th:style="'background-color:' + ${task.category.color} + '20;' + ' padding:4px 15px; border-radius:1.2em; color:#222; font-weight:500;'"></span>
+                  th:style="'background-color:' + ${task.category.color} + '; padding:4px 15px; border-radius:1.2em; color:#222; font-weight:500;'"></span>
             <span th:if="${task.category != null and task.category.color == null}"
                   th:text="${task.category.name}"></span>
             <span th:if="${task.category == null}">-</span>

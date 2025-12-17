@@ -1,9 +1,8 @@
 package com.example.todolist.service;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.example.todolist.dto.request.CreateCategoryRequest;
 import com.example.todolist.dto.request.UpdateCategoryRequest;
@@ -13,198 +12,276 @@ import com.example.todolist.exception.CategoryNotFoundException;
 import com.example.todolist.repository.CategoryRepository;
 import com.example.todolist.repository.TaskRepository;
 import com.example.todolist.repository.UserRepository;
-import java.util.List;
-import java.util.Optional;
+import com.example.todolist.service.CategoryService;
+import com.example.todolist.service.UserService;
+import java.util.*;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("CategoryService")
 class CategoryServiceTest {
 
-  @Mock CategoryRepository categoryRepository;
+    @Mock CategoryRepository categoryRepository;
+    @Mock UserRepository userRepository;
+    @Mock UserService userService;
+    @Mock TaskRepository taskRepository;
+    @InjectMocks CategoryService categoryService;
 
-  @Mock UserRepository userRepository;
+    private User user;
+    private UUID userId;
 
-  @Mock UserService userService;
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+        userId = UUID.randomUUID();
+        user = new User();
+        user.setId(userId);
+        user.setEmail("test@example.com");
+    }
 
-  @InjectMocks CategoryService categoryService;
+    private Category cat(String name) {
+        Category c = new Category();
+        c.setName(name);
+        return c;
+    }
 
-  @Mock TaskRepository taskRepository;
+    @Nested
+    @DisplayName("findCategoryById")
+    class FindCategoryById {
 
-  @BeforeEach
-  void clearSecurity() {
-    SecurityContextHolder.clearContext();
-  }
+        @Test
+        @DisplayName("should return category when found")
+        void shouldReturnCategory() {
+            UUID id = UUID.randomUUID();
+            Category c = new Category();
+            c.setId(id);
+            c.setName("Work");
+            when(categoryRepository.findById(id)).thenReturn(Optional.of(c));
 
-  // ----------------------------------------------------------
-  //  findAllCategories()
-  // ----------------------------------------------------------
-  @Test
-  void getAllCategories_ShouldReturnAllCategoriesForUser() {
-    User user = new User();
-    user.setId(UUID.randomUUID());
+            Category result = categoryService.findCategoryById(id);
 
-    Category c1 = new Category();
-    c1.setName("Work");
+            assertEquals("Work", result.getName());
+            assertEquals(id, result.getId());
+        }
 
-    Category c2 = new Category();
-    c2.setName("Home");
+        @Test
+        @DisplayName("should throw CategoryNotFoundException when not found")
+        void shouldThrowWhenNotFound() {
+            UUID id = UUID.randomUUID();
+            when(categoryRepository.findById(id)).thenReturn(Optional.empty());
 
-    when(userService.getCurrentUser()).thenReturn(user);
-    when(categoryRepository.findAllByUserId(user.getId())).thenReturn(List.of(c1, c2));
+            assertThrows(CategoryNotFoundException.class, () -> categoryService.findCategoryById(id));
+        }
+    }
 
-    List<Category> result = categoryService.findAllCategories();
+    @Nested
+    @DisplayName("findAllCategories")
+    class FindAllCategories {
+        @Test
+        @DisplayName("Sorts ascending by default (including null direction and case-insensitivity)")
+        void sortAscending_DefaultAndNull() {
+            when(userService.getCurrentUser()).thenReturn(user);
+            List<Category> cats = new ArrayList<>(List.of(cat("Zebra"), cat("ąĄĄ"), cat("abc"), cat("Żaba"), cat("bcd")));
+            when(categoryRepository.findAllByUserId(userId)).thenReturn(new ArrayList<>(cats));
 
-    assertEquals(2, result.size());
-    assertEquals("Work", result.get(0).getName());
-    assertEquals("Home", result.get(1).getName());
-  }
+            List<Category> sorted1 = categoryService.findAllCategories("name", null);
+            List<Category> sorted2 = categoryService.findAllCategories("name", "asc");
+            List<Category> sorted3 = categoryService.findAllCategories("name", "ASC");
 
-  // ----------------------------------------------------------
-  //  findCategoryById()
-  // ----------------------------------------------------------
-  @Test
-  void getCategoryById_ShouldReturnCategory() {
-    UUID id = UUID.randomUUID();
-    Category c = new Category();
-    c.setId(id);
-    c.setName("Work");
+            List<String> expected = List.of("abc", "ąĄĄ", "bcd", "Zebra", "Żaba");
 
-    when(categoryRepository.findById(id)).thenReturn(Optional.of(c));
+            for (List<Category> res : List.of(sorted1, sorted2, sorted3)) {
+                assertEquals(expected, res.stream().map(Category::getName).toList(), "Should be sorted ascending (polish collation)");
+            }
+        }
 
-    Category result = categoryService.findCategoryById(id);
+        @Test
+        @DisplayName("Sorts descending if direction is desc/DeSc and handles null names")
+        void sortDescendingWithNullName() {
+            when(userService.getCurrentUser()).thenReturn(user);
+            Category c1 = cat("Kot");
+            Category c2 = cat("Ądrian");
+            Category c3 = cat(null);
+            Category c4 = cat("Zebra");
+            List<Category> cats = Arrays.asList(c1, c2, c3, c4);
 
-    assertEquals("Work", result.getName());
-  }
+            when(categoryRepository.findAllByUserId(userId))
+                    .thenAnswer(inv -> new ArrayList<>(cats));
 
-  @Test
-  void getCategoryById_ShouldThrow_WhenNotFound() {
-    UUID id = UUID.randomUUID();
+            List<Category> result = categoryService.findAllCategories("name", "desc");
+            List<String> actual = result.stream().map(Category::getName).toList();
+            assertEquals(1, actual.stream().filter(Objects::isNull).count(), "Only one null");
+            List<String> noNull = actual.stream().filter(Objects::nonNull).toList();
+            assertEquals(Arrays.asList("Zebra", "Kot", "Ądrian"), noNull);
 
-    when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+            result = categoryService.findAllCategories("name", "DeSc");
+            actual = result.stream().map(Category::getName).toList();
+            assertEquals(1, actual.stream().filter(Objects::isNull).count(), "Only one null");
+            noNull = actual.stream().filter(Objects::nonNull).toList();
+            assertEquals(Arrays.asList("Zebra", "Kot", "Ądrian"), noNull);
+        }
 
-    assertThrows(CategoryNotFoundException.class, () -> categoryService.findCategoryById(id));
-  }
+        @Test
+        @DisplayName("Returns empty list if no categories")
+        void returnsEmptyList_IfNoCategories() {
+            when(userService.getCurrentUser()).thenReturn(user);
+            when(categoryRepository.findAllByUserId(userId)).thenReturn(new ArrayList<>());
 
-  // ----------------------------------------------------------
-  //  createCategory()
-  // ----------------------------------------------------------
-  @Test
-  void createCategory_ShouldCreateCategory() {
-    SecurityContextHolder.getContext()
-        .setAuthentication(new UsernamePasswordAuthenticationToken("test@example.com", null));
+            List<Category> result = categoryService.findAllCategories("name", "asc");
+            assertTrue(result.isEmpty());
+        }
 
-    User user = new User();
-    user.setEmail("test@example.com");
+        @Test
+        @DisplayName("Handles categories with or without name and mixed diacritics/polish")
+        void sortsHandlesDiacriticsAndNulls() {
+            when(userService.getCurrentUser()).thenReturn(user);
+            Category c1 = cat("żółw");
+            Category c2 = cat("Ąbc");
+            Category c3 = cat("óbłęd");
+            Category c4 = cat(null);
+            Category c5 = cat("Zebra");
+            Category c6 = cat("aBc");
 
-    when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+            List<Category> cats = Arrays.asList(c1,c2,c3,c4,c5,c6);
+            when(categoryRepository.findAllByUserId(userId)).thenAnswer(inv -> new ArrayList<>(cats));
 
-    when(userService.getCurrentUser()).thenReturn(user);
-    when(categoryRepository.existsCategoriesByNameAndUserId("Work", user.getId()))
-        .thenReturn(false);
+            List<Category> resultAsc = categoryService.findAllCategories("name", null);
+            List<String> arrAsc = resultAsc.stream().map(Category::getName).toList();
 
-    CreateCategoryRequest dto = new CreateCategoryRequest();
-    dto.setName("Work");
-    dto.setColor("#FFF");
+            List<String> expected = Arrays.asList("aBc", "Ąbc", "óbłęd", "Zebra", "żółw", null); // null ostatni
+            assertEquals(expected, arrAsc, "Ascending sorts and null last");
 
-    Category saved = new Category();
-    saved.setName("Work");
-    saved.setColor("#FFF");
-    saved.setUser(user);
+            List<Category> resultDesc = categoryService.findAllCategories("name", "desc");
+            List<String> arrDesc = resultDesc.stream().map(Category::getName).toList();
 
-    when(categoryRepository.save(any(Category.class))).thenReturn(saved);
+            List<String> expectedDesc = new ArrayList<>(expected);
+            Collections.reverse(expectedDesc);
+            assertEquals(expectedDesc, arrDesc, "Descending sorts and null last");
+        }
+    }
 
-    Category result = categoryService.createCategory(dto);
+    @Nested
+    @DisplayName("createCategory")
+    class CreateCategory {
 
-    assertEquals("Work", result.getName());
-    assertEquals("#FFF", result.getColor());
-    assertEquals(user, result.getUser());
-  }
+        @Test
+        @DisplayName("should create category when name is unique")
+        void shouldCreateCategory() {
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken("test@example.com", null));
 
-  @Test
-  void createCategory_ShouldThrow_WhenExists() {
-    SecurityContextHolder.getContext()
-        .setAuthentication(new UsernamePasswordAuthenticationToken("test@example.com", null));
+            when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+            when(userService.getCurrentUser()).thenReturn(user);
+            when(categoryRepository.existsCategoriesByNameAndUserId("Work", userId)).thenReturn(false);
 
-    User user = new User();
-    user.setEmail("test@example.com");
+            CreateCategoryRequest dto = new CreateCategoryRequest();
+            dto.setName("Work");
+            dto.setColor("#FFF");
 
-    when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+            Category saved = new Category();
+            saved.setName("Work");
+            saved.setColor("#FFF");
+            saved.setUser(user);
 
-    when(userService.getCurrentUser()).thenReturn(user);
-    when(categoryRepository.existsCategoriesByNameAndUserId("Work", user.getId())).thenReturn(true);
+            when(categoryRepository.save(any(Category.class))).thenReturn(saved);
 
-    CreateCategoryRequest dto = new CreateCategoryRequest();
-    dto.setName("Work");
-    dto.setColor("#FFF");
+            Category result = categoryService.createCategory(dto);
 
-    assertThrows(IllegalArgumentException.class, () -> categoryService.createCategory(dto));
-  }
+            assertEquals("Work", result.getName());
+            assertEquals("#FFF", result.getColor());
+            assertEquals(user, result.getUser());
+        }
 
-  // ----------------------------------------------------------
-  //  updateCategory()
-  // ----------------------------------------------------------
-  @Test
-  void updateCategory_ShouldUpdateBothFields() {
-    UUID id = UUID.randomUUID();
+        @Test
+        @DisplayName("should throw IllegalArgumentException if category name exists for user")
+        void shouldThrowIfExists() {
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken("test@example.com", null));
 
-    Category existing = new Category();
-    existing.setId(id);
-    existing.setName("Old");
-    existing.setColor("#000");
+            when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+            when(userService.getCurrentUser()).thenReturn(user);
+            when(categoryRepository.existsCategoriesByNameAndUserId("Work", userId)).thenReturn(true);
 
-    UpdateCategoryRequest update = new UpdateCategoryRequest("New", "#FFF");
+            CreateCategoryRequest dto = new CreateCategoryRequest();
+            dto.setName("Work");
+            dto.setColor("#FFF");
 
-    when(categoryRepository.findById(id)).thenReturn(Optional.of(existing));
+            assertThrows(IllegalArgumentException.class, () -> categoryService.createCategory(dto));
+            verify(categoryRepository, never()).save(any());
+        }
+    }
 
-    when(categoryRepository.save(any(Category.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    @Nested
+    @DisplayName("updateCategory")
+    class UpdateCategory {
 
-    Category result = categoryService.updateCategory(id, update);
+        @Test
+        @DisplayName("should update name and color")
+        void shouldUpdateBothFields() {
+            UUID id = UUID.randomUUID();
+            Category existing = new Category();
+            existing.setId(id);
+            existing.setName("Old");
+            existing.setColor("#000");
 
-    assertEquals("New", result.getName());
-    assertEquals("#FFF", result.getColor());
-  }
+            UpdateCategoryRequest update = new UpdateCategoryRequest("New", "#FFF");
 
-  @Test
-  void updateCategory_ShouldThrow_WhenNotFound() {
-    UUID id = UUID.randomUUID();
-    when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+            when(categoryRepository.findById(id)).thenReturn(Optional.of(existing));
+            when(categoryRepository.save(any(Category.class))).thenAnswer(inv -> inv.getArgument(0));
 
-    assertThrows(
-        CategoryNotFoundException.class,
-        () -> categoryService.updateCategory(id, new UpdateCategoryRequest("A", "B")));
-  }
+            Category result = categoryService.updateCategory(id, update);
 
-  // ----------------------------------------------------------
-  //  deleteCategory()
-  // ----------------------------------------------------------
-  @Test
-  void deleteCategory_ShouldDelete() {
-    UUID id = UUID.randomUUID();
-    Category category = new Category();
-    category.setId(id);
+            assertEquals("New", result.getName());
+            assertEquals("#FFF", result.getColor());
+            assertEquals(id, result.getId());
+        }
 
-    when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
+        @Test
+        @DisplayName("should throw when category not found")
+        void shouldThrow_WhenNotFound() {
+            UUID id = UUID.randomUUID();
+            when(categoryRepository.findById(id)).thenReturn(Optional.empty());
 
-    categoryService.deleteCategoryById(id);
+            assertThrows(CategoryNotFoundException.class,
+                    () -> categoryService.updateCategory(id, new UpdateCategoryRequest("A", "B")));
+        }
+    }
 
-    verify(categoryRepository).findById(id);
-    verify(categoryRepository).delete(category);
-  }
+    @Nested
+    @DisplayName("deleteCategoryById")
+    class DeleteCategoryById {
 
-  @Test
-  void deleteCategory_ShouldThrow_WhenNotFound() {
-    UUID id = UUID.randomUUID();
-    when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+        @Test
+        @DisplayName("should delete when category present")
+        void shouldDelete() {
+            UUID id = UUID.randomUUID();
+            Category category = new Category();
+            category.setId(id);
+            when(categoryRepository.findById(id)).thenReturn(Optional.of(category));
 
-    assertThrows(CategoryNotFoundException.class, () -> categoryService.deleteCategoryById(id));
-  }
+            categoryService.deleteCategoryById(id);
+
+            verify(categoryRepository).findById(id);
+            verify(categoryRepository).delete(category);
+        }
+
+        @Test
+        @DisplayName("should throw when category not found")
+        void shouldThrow_OnNotFound() {
+            UUID id = UUID.randomUUID();
+            when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(CategoryNotFoundException.class, () -> categoryService.deleteCategoryById(id));
+            verify(categoryRepository, never()).delete(any());
+        }
+    }
 }

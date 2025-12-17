@@ -3,6 +3,7 @@ package com.example.todolist.controller.api;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -18,7 +19,9 @@ import com.example.todolist.dto.response.CreateTaskResponse;
 import com.example.todolist.dto.response.GetTaskResponse;
 import com.example.todolist.entity.Status;
 import com.example.todolist.entity.Task;
+import com.example.todolist.exception.TaskNotFoundException;
 import com.example.todolist.service.TaskService;
+import com.example.todolist.service.filter.TaskFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,9 +29,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -49,7 +55,6 @@ class TaskApiControllerTest {
 
   @Autowired private ObjectMapper objectMapper;
 
-  // Wspólne dane testowe
   private UUID taskId1;
   private UUID taskId2;
   private Task task1;
@@ -124,16 +129,18 @@ class TaskApiControllerTest {
     GetTaskResponse helloResponse =
         new GetTaskResponse(helloId, "Hello world", null, null, null, null, null);
 
-    when(taskService.searchTasksByTitle("Hello", 0, 10)).thenReturn(List.of(taskHello));
-    when(taskMapper.mapToGetTaskResponse(List.of(taskHello))).thenReturn(List.of(helloResponse));
+    Page<GetTaskResponse> responsePage = new PageImpl<>(List.of(helloResponse));
 
-    // when / then
+    when(taskService.searchTasksByTitle(any(TaskFilter.class)))
+        .thenReturn(new PageImpl<>(List.of(taskHello)));
+    when(taskMapper.mapToGetTaskResponse(any(Page.class))).thenReturn(responsePage);
+
     mockMvc
         .perform(get(BASE_URL + "/search").param("keyword", "Hello"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].title", is("Hello world")));
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].title", is("Hello world")));
   }
 
   @Test
@@ -214,4 +221,34 @@ class TaskApiControllerTest {
 
     verify(taskService).deleteTaskById(id);
   }
+
+    @Test
+    @DisplayName("GET /api/tasks/{id} throws TaskNotFoundException and returns 404 JSON")
+    void getTaskById_TaskNotFoundException_Returns404() throws Exception {
+        UUID missingId = UUID.randomUUID();
+        Mockito.when(taskService.findTaskById(missingId)).thenThrow(new TaskNotFoundException("Id", missingId));
+
+        mockMvc.perform(get(BASE_URL + '/' + missingId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/tasks/{id} throws TaskNotFoundException and returns 404 JSON")
+    void patchTask_TaskNotFoundException_Returns404() throws Exception {
+        UUID missingId = UUID.randomUUID();
+        Mockito.when(taskService.updateTask(eq(missingId), any())).thenThrow(new TaskNotFoundException("id", missingId));
+
+        mockMvc.perform(patch(BASE_URL + '/' + missingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"test\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+    }
 }

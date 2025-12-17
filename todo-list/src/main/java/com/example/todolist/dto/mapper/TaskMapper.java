@@ -7,6 +7,8 @@ import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = "spring")
 public interface TaskMapper {
@@ -19,4 +21,9 @@ public interface TaskMapper {
   GetTaskResponse mapToGetTaskResponse(Task task);
 
   List<GetTaskResponse> mapToGetTaskResponse(List<Task> tasks);
+
+  default Page<GetTaskResponse> mapToGetTaskResponse(Page<Task> page) {
+    List<GetTaskResponse> content = mapToGetTaskResponse(page.getContent());
+    return new PageImpl<>(content, page.getPageable(), page.getTotalElements());
+  }
 }

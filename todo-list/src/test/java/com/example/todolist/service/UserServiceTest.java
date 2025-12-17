@@ -8,57 +8,90 @@ import com.example.todolist.entity.User;
 import com.example.todolist.exception.UserAlreadyExistsException;
 import com.example.todolist.repository.UserRepository;
 import java.util.Optional;
+
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("UserService")
 class UserServiceTest {
 
-  @Mock UserRepository userRepository;
+    @Mock UserRepository userRepository;
 
-  @Mock PasswordEncoder encoder;
+    @Mock PasswordEncoder encoder;
 
-  @InjectMocks UserService userService;
+    @InjectMocks UserService userService;
 
-  @Test
-  void registerUser_createsUser_WhenEmailNotExists() {
-    RegisterRequest dto = new RegisterRequest("mail@test.com", "pass123");
+    @Test
+    @DisplayName("registerUser creates new user when email does not exist")
+    void registerUser_createsUser_WhenEmailNotExists() {
+        RegisterRequest dto = new RegisterRequest("mail@test.com", "pass123");
+        when(userRepository.findByEmail("mail@test.com")).thenReturn(Optional.empty());
+        when(encoder.encode("pass123")).thenReturn("encodedPassword");
 
-    when(userRepository.findByEmail("mail@test.com")).thenReturn(Optional.empty());
+        userService.register(dto);
 
-    when(encoder.encode("pass123")).thenReturn("encodedPassword");
+        verify(userRepository).findByEmail("mail@test.com");
+        verify(encoder).encode("pass123");
+        verify(userRepository).save(
+                argThat(
+                        user ->
+                                user.getEmail().equals("mail@test.com")
+                                        && user.getPassword().equals("encodedPassword")
+                                        && user.getRole().equals("USER")));
+    }
 
-    userService.register(dto);
+    @Test
+    @DisplayName("registerUser throws exception when email exists")
+    void registerUser_throws_WhenUserExists() {
+        RegisterRequest dto = new RegisterRequest("mail@test.com", "pass123");
+        when(userRepository.findByEmail("mail@test.com")).thenReturn(Optional.of(new User()));
 
-    verify(userRepository).findByEmail("mail@test.com");
-    verify(encoder).encode("pass123");
+        assertThrows(
+                UserAlreadyExistsException.class,
+                () -> userService.register(dto));
 
-    verify(userRepository)
-        .save(
-            argThat(
-                user ->
-                    user.getEmail().equals("mail@test.com")
-                        && user.getPassword().equals("encodedPassword")
-                        && user.getRole().equals("USER")));
-  }
+        verify(userRepository).findByEmail("mail@test.com");
+        verify(userRepository, never()).save(any());
+    }
+    @Test
+    @DisplayName("getCurrentUser returns found user by email from SecurityContext")
+    void getCurrentUser_ReturnsUser() {
+        String email = "test@example.com";
+        User user = new User();
+        user.setEmail(email);
 
-  @Test
-  void registerUser_throws_WhenUserExists() {
-    RegisterRequest dto = new RegisterRequest("mail@test.com", "pass123");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(email, "password")
+        );
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
 
-    when(userRepository.findByEmail("mail@test.com")).thenReturn(Optional.of(new User()));
+        User result = userService.getCurrentUser();
 
-    assertThrows(
-        UserAlreadyExistsException.class,
-        () -> {
-          userService.register(dto);
-        });
+        assertEquals(email, result.getEmail());
+        verify(userRepository).findByEmail(email);
+    }
 
-    verify(userRepository).findByEmail("mail@test.com");
-    verify(userRepository, never()).save(any());
-  }
+    @Test
+    @DisplayName("getCurrentUser throws when user with email not found")
+    void getCurrentUser_ThrowsIfNotFound() {
+        String email = "missing@example.com";
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(email, "password")
+        );
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                userService.getCurrentUser()
+        );
+        assertTrue(ex.getMessage().contains("User not found"));
+        verify(userRepository).findByEmail(email);
+    }
 }
