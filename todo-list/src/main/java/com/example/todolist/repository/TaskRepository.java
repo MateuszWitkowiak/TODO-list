@@ -13,7 +13,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
-    @Query("""
+  @Query(
+      """
     SELECT t FROM Task t
     WHERE t.user.id = :userId
       AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
@@ -22,15 +23,14 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
       AND (:dueAfter IS NULL OR t.dueDate >= :dueAfter)
       AND (:dueBefore IS NULL OR t.dueDate <= :dueBefore)
     """)
-    Page<Task> searchTasksByFilter(
-            @Param("userId") UUID userId,
-            @Param("keyword") String keyword,
-            @Param("status") Status status,
-            @Param("categoryId") UUID categoryId,
-            @Param("dueAfter") LocalDateTime dueAfter,
-            @Param("dueBefore") LocalDateTime dueBefore,
-            Pageable pageable
-    );
+  Page<Task> searchTasksByFilter(
+      @Param("userId") UUID userId,
+      @Param("keyword") String keyword,
+      @Param("status") Status status,
+      @Param("categoryId") UUID categoryId,
+      @Param("dueAfter") LocalDateTime dueAfter,
+      @Param("dueBefore") LocalDateTime dueBefore,
+      Pageable pageable);
 
   Page<Task> findByUserIdAndDueDateIsNotNullOrderByDueDateAsc(UUID userId, Pageable pageable);
 

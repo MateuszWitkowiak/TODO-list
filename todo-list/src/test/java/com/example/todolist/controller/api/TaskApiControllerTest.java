@@ -222,33 +222,38 @@ class TaskApiControllerTest {
     verify(taskService).deleteTaskById(id);
   }
 
-    @Test
-    @DisplayName("GET /api/tasks/{id} throws TaskNotFoundException and returns 404 JSON")
-    void getTaskById_TaskNotFoundException_Returns404() throws Exception {
-        UUID missingId = UUID.randomUUID();
-        Mockito.when(taskService.findTaskById(missingId)).thenThrow(new TaskNotFoundException("Id", missingId));
+  @Test
+  @DisplayName("GET /api/tasks/{id} throws TaskNotFoundException and returns 404 JSON")
+  void getTaskById_TaskNotFoundException_Returns404() throws Exception {
+    UUID missingId = UUID.randomUUID();
+    Mockito.when(taskService.findTaskById(missingId))
+        .thenThrow(new TaskNotFoundException("Id", missingId));
 
-        mockMvc.perform(get(BASE_URL + '/' + missingId))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Not Found"))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-    }
+    mockMvc
+        .perform(get(BASE_URL + '/' + missingId))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.status").value(404))
+        .andExpect(jsonPath("$.error").value("Not Found"))
+        .andExpect(jsonPath("$.message").exists())
+        .andExpect(jsonPath("$.timestamp").exists());
+  }
 
-    @Test
-    @DisplayName("PATCH /api/tasks/{id} throws TaskNotFoundException and returns 404 JSON")
-    void patchTask_TaskNotFoundException_Returns404() throws Exception {
-        UUID missingId = UUID.randomUUID();
-        Mockito.when(taskService.updateTask(eq(missingId), any())).thenThrow(new TaskNotFoundException("id", missingId));
+  @Test
+  @DisplayName("PATCH /api/tasks/{id} throws TaskNotFoundException and returns 404 JSON")
+  void patchTask_TaskNotFoundException_Returns404() throws Exception {
+    UUID missingId = UUID.randomUUID();
+    Mockito.when(taskService.updateTask(eq(missingId), any()))
+        .thenThrow(new TaskNotFoundException("id", missingId));
 
-        mockMvc.perform(patch(BASE_URL + '/' + missingId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\": \"test\"}"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Not Found"))
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.timestamp").exists());
-    }
+    mockMvc
+        .perform(
+            patch(BASE_URL + '/' + missingId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\": \"test\"}"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.status").value(404))
+        .andExpect(jsonPath("$.error").value("Not Found"))
+        .andExpect(jsonPath("$.message").exists())
+        .andExpect(jsonPath("$.timestamp").exists());
+  }
 }

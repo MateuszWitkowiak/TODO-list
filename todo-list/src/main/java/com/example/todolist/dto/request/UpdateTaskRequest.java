@@ -1,7 +1,6 @@
 package com.example.todolist.dto.request;
 
 import com.example.todolist.entity.Status;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.UUID;
