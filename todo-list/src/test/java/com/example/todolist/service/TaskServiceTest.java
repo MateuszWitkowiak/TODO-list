@@ -103,8 +103,8 @@ class TaskServiceTest {
     @DisplayName("getAllTasks should return all tasks of current user")
     void getAllTasks_ShouldReturnAllTasksOfUser() {
       List<Task> tasks = List.of(new Task(), new Task());
-      when(taskRepository.findAllByUserId(userId)).thenReturn(tasks);
       when(userService.getCurrentUser()).thenReturn(mockUser);
+      when(taskRepository.findAllByUserId(userId)).thenReturn(tasks);
 
       List<Task> result = taskService.getAllTasks();
 
@@ -120,10 +120,11 @@ class TaskServiceTest {
       filter.setSize(0);
       filter.setSort(null);
       filter.setDirection(null);
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       Page<Task> expected = new PageImpl<>(List.of());
       when(taskRepository.searchTasksByFilter(
-              eq(userId), isNull(), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class)))
+              eq(userId), eq(""), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class)))
           .thenReturn(expected);
 
       Page<Task> result = taskService.getAllTasks(filter);
@@ -133,23 +134,25 @@ class TaskServiceTest {
       ArgumentCaptor<PageRequest> prCaptor = ArgumentCaptor.forClass(PageRequest.class);
       verify(taskRepository)
           .searchTasksByFilter(
-              eq(userId), isNull(), isNull(), isNull(), isNull(), isNull(), prCaptor.capture());
+              eq(userId), eq(""), isNull(), isNull(), isNull(), isNull(), prCaptor.capture());
       PageRequest pageRequest = prCaptor.getValue();
       assertEquals(0, pageRequest.getPageNumber());
       assertEquals(1, pageRequest.getPageSize());
-      assertEquals(Sort.by("title").getOrderFor("title").getDirection(), Sort.Direction.ASC);
+      assertEquals(
+          Sort.Direction.ASC,
+          Objects.requireNonNull(pageRequest.getSort().getOrderFor("title")).getDirection());
     }
 
     @Test
     @DisplayName("Handles descending sort and custom sort property")
     void getAllTasks_DescendingSort() {
-
       TaskFilter filter = new TaskFilter();
       filter.setSort("someField");
       filter.setDirection("desc");
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(
-              eq(userId), isNull(), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class)))
+              eq(userId), eq(""), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class)))
           .thenReturn(Page.empty());
 
       taskService.getAllTasks(filter);
@@ -169,10 +172,11 @@ class TaskServiceTest {
       TaskFilter filter = new TaskFilter();
       filter.setDueAfter(LocalDate.of(2023, 1, 15));
       filter.setDueBefore(LocalDate.of(2023, 2, 5));
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(
               eq(userId),
-              isNull(),
+              eq(""),
               isNull(),
               isNull(),
               eq(LocalDate.of(2023, 1, 15).atStartOfDay()),
@@ -185,7 +189,7 @@ class TaskServiceTest {
       verify(taskRepository)
           .searchTasksByFilter(
               eq(userId),
-              isNull(),
+              eq(""),
               isNull(),
               isNull(),
               eq(LocalDate.of(2023, 1, 15).atStartOfDay()),
@@ -198,10 +202,11 @@ class TaskServiceTest {
     void getAllTasks_WithValidStatus() {
       TaskFilter filter = new TaskFilter();
       filter.setStatus("TODO");
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(
               eq(userId),
-              isNull(),
+              eq(""),
               eq(Status.TODO),
               isNull(),
               isNull(),
@@ -214,7 +219,7 @@ class TaskServiceTest {
       verify(taskRepository)
           .searchTasksByFilter(
               eq(userId),
-              isNull(),
+              eq(""),
               eq(Status.TODO),
               isNull(),
               isNull(),
@@ -227,16 +232,17 @@ class TaskServiceTest {
     void getAllTasks_WithInvalidStatus() {
       TaskFilter filter = new TaskFilter();
       filter.setStatus("NOT_A_STATUS");
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(
-              eq(userId), isNull(), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class)))
+              eq(userId), eq(""), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class)))
           .thenReturn(Page.empty());
 
       taskService.getAllTasks(filter);
 
       verify(taskRepository)
           .searchTasksByFilter(
-              eq(userId), isNull(), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class));
+              eq(userId), eq(""), isNull(), isNull(), isNull(), isNull(), any(PageRequest.class));
     }
 
     @Test
@@ -245,10 +251,11 @@ class TaskServiceTest {
       TaskFilter filter = new TaskFilter();
       UUID categoryId = UUID.randomUUID();
       filter.setCategoryId(categoryId);
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(
               eq(userId),
-              isNull(),
+              eq(""),
               isNull(),
               eq(categoryId),
               isNull(),
@@ -261,7 +268,7 @@ class TaskServiceTest {
       verify(taskRepository)
           .searchTasksByFilter(
               eq(userId),
-              isNull(),
+              eq(""),
               isNull(),
               eq(categoryId),
               isNull(),
@@ -276,18 +283,20 @@ class TaskServiceTest {
       filterNull.setTitle(null);
       filterNull.setPage(0);
       filterNull.setSize(1);
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(any(), eq(""), any(), any(), any(), any(), any()))
           .thenReturn(Page.empty());
-      taskService.searchTasksByTitle(filterNull);
+      taskService.getAllTasks(filterNull);
 
       TaskFilter filterBlank = new TaskFilter();
       filterBlank.setTitle("  ");
       filterBlank.setPage(0);
       filterBlank.setSize(1);
+      when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(any(), eq(""), any(), any(), any(), any(), any()))
           .thenReturn(Page.empty());
-      taskService.searchTasksByTitle(filterBlank);
+      taskService.getAllTasks(filterBlank);
 
       verify(taskRepository, times(2))
           .searchTasksByFilter(any(), eq(""), any(), any(), any(), any(), any());
@@ -302,17 +311,18 @@ class TaskServiceTest {
       filter.setTitle("X");
       filter.setPage(0);
       filter.setSize(1);
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(any(), any(), any(), any(), any(), any(), any()))
           .thenReturn(Page.empty());
-      taskService.searchTasksByTitle(filter);
+      taskService.getAllTasks(filter);
 
       filter.setSort(" ");
-      taskService.searchTasksByTitle(filter);
+      taskService.getAllTasks(filter);
 
       filter.setSort("deadline");
       filter.setDirection("desc");
-      taskService.searchTasksByTitle(filter);
+      taskService.getAllTasks(filter);
 
       ArgumentCaptor<PageRequest> prCaptor = ArgumentCaptor.forClass(PageRequest.class);
       verify(taskRepository, atLeastOnce())
@@ -337,18 +347,21 @@ class TaskServiceTest {
       filter.setPage(0);
       filter.setSize(1);
       when(userService.getCurrentUser()).thenReturn(mockUser);
-      taskService.searchTasksByTitle(filter);
+      taskService.getAllTasks(filter);
 
       filter.setDueAfter(LocalDate.of(2024, 2, 1));
-      taskService.searchTasksByTitle(filter);
+      when(userService.getCurrentUser()).thenReturn(mockUser);
+      taskService.getAllTasks(filter);
 
       filter.setDueAfter(null);
       filter.setDueBefore(LocalDate.of(2024, 2, 20));
-      taskService.searchTasksByTitle(filter);
+      when(userService.getCurrentUser()).thenReturn(mockUser);
+      taskService.getAllTasks(filter);
 
       filter.setDueAfter(LocalDate.of(2024, 2, 1));
       filter.setDueBefore(LocalDate.of(2024, 2, 20));
-      taskService.searchTasksByTitle(filter);
+      when(userService.getCurrentUser()).thenReturn(mockUser);
+      taskService.getAllTasks(filter);
 
       verify(taskRepository, times(4))
           .searchTasksByFilter(eq(userId), any(), any(), any(), any(), any(), any());
@@ -364,21 +377,23 @@ class TaskServiceTest {
 
       filter.setStatus("TODO");
       when(userService.getCurrentUser()).thenReturn(mockUser);
-      taskService.searchTasksByTitle(filter);
+      taskService.getAllTasks(filter);
       verify(taskRepository)
-          .searchTasksByFilter(eq(userId), any(), eq(Status.TODO), any(), any(), any(), any());
+          .searchTasksByFilter(eq(userId), eq("abc"), eq(Status.TODO), any(), any(), any(), any());
 
       reset(taskRepository);
       filter.setStatus("ASDFG");
-      taskService.searchTasksByTitle(filter);
+      when(userService.getCurrentUser()).thenReturn(mockUser);
+      taskService.getAllTasks(filter);
       verify(taskRepository)
-          .searchTasksByFilter(eq(userId), any(), isNull(), any(), any(), any(), any());
+          .searchTasksByFilter(eq(userId), eq("abc"), isNull(), any(), any(), any(), any());
 
       reset(taskRepository);
       filter.setStatus(null);
-      taskService.searchTasksByTitle(filter);
+      when(userService.getCurrentUser()).thenReturn(mockUser);
+      taskService.getAllTasks(filter);
       verify(taskRepository)
-          .searchTasksByFilter(eq(userId), any(), isNull(), any(), any(), any(), any());
+          .searchTasksByFilter(eq(userId), eq("abc"), isNull(), any(), any(), any(), any());
     }
 
     @Test
@@ -388,10 +403,11 @@ class TaskServiceTest {
       filter.setTitle("abc");
       filter.setPage(-10);
       filter.setSize(0);
+
       when(userService.getCurrentUser()).thenReturn(mockUser);
       when(taskRepository.searchTasksByFilter(any(), any(), any(), any(), any(), any(), any()))
           .thenReturn(Page.empty());
-      taskService.searchTasksByTitle(filter);
+      taskService.getAllTasks(filter);
 
       ArgumentCaptor<PageRequest> prCaptor = ArgumentCaptor.forClass(PageRequest.class);
       verify(taskRepository)
@@ -425,37 +441,6 @@ class TaskServiceTest {
       when(taskRepository.findById(id)).thenReturn(Optional.empty());
 
       assertThrows(TaskNotFoundException.class, () -> taskService.findTaskById(id));
-    }
-  }
-
-  @Nested
-  @DisplayName("SearchTasksByTitle")
-  class SearchTasksByTitleTests {
-    @Test
-    @DisplayName("searchTasksByTitle should return filtered tasks")
-    void searchTasksByTitle_ShouldReturnFilteredTasks() {
-      String keyword = "abc";
-      int pageNum = 0;
-      int size = 5;
-      PageRequest pageRequest = PageRequest.of(pageNum, size, Sort.by("title").ascending());
-      Task task = new Task();
-      Page<Task> mockPage = new PageImpl<>(List.of(task));
-
-      when(userService.getCurrentUser()).thenReturn(mockUser);
-
-      TaskFilter filter = new TaskFilter();
-      filter.setTitle(keyword);
-      filter.setPage(pageNum);
-      filter.setSize(size);
-
-      when(taskRepository.searchTasksByFilter(userId, keyword, null, null, null, null, pageRequest))
-          .thenReturn(mockPage);
-
-      Page<Task> result = taskService.searchTasksByTitle(filter);
-
-      assertEquals(1, result.getTotalElements());
-      verify(taskRepository)
-          .searchTasksByFilter(userId, keyword, null, null, null, null, pageRequest);
     }
   }
 
@@ -688,7 +673,7 @@ class TaskServiceTest {
 
     @Test
     @DisplayName("Should throw RuntimeException on writer error")
-    void exportTasksCsv_writerError() throws Exception {
+    void exportTasksCsv_writerError() {
       User user = new User();
       user.setId(UUID.randomUUID());
       when(userService.getCurrentUser()).thenReturn(user);
@@ -723,7 +708,7 @@ class TaskServiceTest {
   class ImportTests {
     @Test
     @DisplayName("Should import well-formed UTF-8 CSV and persist tasks properly")
-    void importCsv_success() throws Exception {
+    void importCsv_success() {
       User user = new User();
       user.setId(UUID.randomUUID());
       when(userService.getCurrentUser()).thenReturn(user);
@@ -769,7 +754,7 @@ class TaskServiceTest {
 
     @Test
     @DisplayName("Should import with unknown category gracefully (category=null)")
-    void importCsv_unknownCategory() throws Exception {
+    void importCsv_unknownCategory() {
       User user = new User();
       user.setId(UUID.randomUUID());
       when(userService.getCurrentUser()).thenReturn(user);
@@ -791,7 +776,7 @@ class TaskServiceTest {
 
     @Test
     @DisplayName("Should treat missing/empty fields as null/task defaults")
-    void importCsv_missingFields() throws Exception {
+    void importCsv_missingFields() {
       User user = new User();
       user.setId(UUID.randomUUID());
       when(userService.getCurrentUser()).thenReturn(user);

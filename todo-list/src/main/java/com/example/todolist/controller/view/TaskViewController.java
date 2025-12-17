@@ -60,11 +60,7 @@ public class TaskViewController {
   public String showTasks(@ModelAttribute TaskFilter taskFilter, Model model) {
     Page<Task> taskPage;
 
-    if (taskFilter.getTitle() != null && !taskFilter.getTitle().isBlank()) {
-      taskPage = taskService.searchTasksByTitle(taskFilter);
-    } else {
-      taskPage = taskService.getAllTasks(taskFilter);
-    }
+    taskPage = taskService.getAllTasks(taskFilter);
 
     List<Category> categories = categoryService.findAllCategories();
 

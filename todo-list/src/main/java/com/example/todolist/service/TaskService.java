@@ -74,7 +74,8 @@ public class TaskService {
     UUID userId = userService.getCurrentUser().getId();
     int page = Math.max(filter.getPage(), 0);
     int size = Math.max(filter.getSize(), 1);
-
+    String keyword =
+        (filter.getTitle() != null && !filter.getTitle().isBlank()) ? filter.getTitle() : "";
     String sortProperty =
         (filter.getSort() == null || filter.getSort().isBlank()) ? "title" : filter.getSort();
     Sort.Direction dir =
@@ -92,40 +93,6 @@ public class TaskService {
         status = Status.valueOf(filter.getStatus());
       }
     } catch (IllegalArgumentException ex) {
-      log.warn("Invalid status filter '{}', skipping status filter", filter.getStatus());
-    }
-
-    return taskRepository.searchTasksByFilter(
-        userId, null, status, filter.getCategoryId(), dueAfter, dueBefore, pageRequest);
-  }
-
-  @Transactional(readOnly = true)
-  public Page<Task> searchTasksByTitle(TaskFilter filter) {
-    UUID userId = userService.getCurrentUser().getId();
-    int page = Math.max(filter.getPage(), 0);
-    int size = Math.max(filter.getSize(), 1);
-
-    String keyword =
-        (filter.getTitle() != null && !filter.getTitle().isBlank()) ? filter.getTitle() : "";
-
-    String sortProperty =
-        (filter.getSort() == null || filter.getSort().isBlank()) ? "title" : filter.getSort();
-    Sort.Direction dir =
-        "desc".equalsIgnoreCase(filter.getDirection()) ? Sort.Direction.DESC : Sort.Direction.ASC;
-    Sort sortObj = Sort.by(dir, sortProperty);
-
-    PageRequest pageRequest = PageRequest.of(page, size, sortObj);
-
-    LocalDateTime dueAfter =
-        filter.getDueAfter() != null ? filter.getDueAfter().atStartOfDay() : null;
-    LocalDateTime dueBefore =
-        filter.getDueBefore() != null ? filter.getDueBefore().atTime(LocalTime.MAX) : null;
-    Status status = null;
-    try {
-      if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
-        status = Status.valueOf(filter.getStatus());
-      }
-    } catch (IllegalArgumentException ignored) {
       log.warn("Invalid status filter '{}', skipping status filter", filter.getStatus());
     }
 
@@ -282,7 +249,8 @@ public class TaskService {
 
         UUID categoryId = null;
         if (row.length > 4 && row[4] != null && !row[4].isBlank()) {
-          Category category = categoryRepository.findByNameAndUserId(row[4], user.getId()).orElse(null);
+          Category category =
+              categoryRepository.findByNameAndUserId(row[4], user.getId()).orElse(null);
           if (category != null) {
             categoryId = category.getId();
           }

@@ -108,23 +108,6 @@ class TaskViewControllerTest {
   }
 
   @Test
-  @DisplayName("GET /tasks with title filter should call searchTasksByTitle")
-  void showTasks_titleFilter_ShouldCallSearch() throws Exception {
-    TaskFilter filter = new TaskFilter();
-    filter.setTitle("ABC");
-    Page<Task> page = new PageImpl<>(List.of());
-    when(taskService.searchTasksByTitle(any(TaskFilter.class))).thenReturn(page);
-    when(categoryService.findAllCategories()).thenReturn(List.of());
-
-    mockMvc
-        .perform(get("/tasks").param("title", "ABC"))
-        .andExpect(status().isOk())
-        .andExpect(view().name("tasks"));
-
-    verify(taskService).searchTasksByTitle(any(TaskFilter.class));
-  }
-
-  @Test
   @DisplayName("GET /tasks/edit/{id} should return task edit form")
   void showEditTaskForm_ShouldReturnViewWithPopulatedForm() throws Exception {
     UUID taskId = UUID.randomUUID();

@@ -10,9 +10,11 @@ import com.example.todolist.service.TaskService;
 import com.example.todolist.service.filter.TaskFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,22 +40,42 @@ public class TaskApiController {
     return ResponseEntity.ok(response);
   }
 
+  @GetMapping("/all")
+  public ResponseEntity<Page<GetTaskResponse>> getAllTasks(
+      @RequestParam(required = false) String title,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) UUID categoryId,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDate dueAfter,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDate dueBefore,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "title") String sort,
+      @RequestParam(defaultValue = "asc") String direction) {
+    TaskFilter filter = new TaskFilter();
+    filter.setTitle(title);
+    filter.setStatus(status);
+    filter.setCategoryId(categoryId);
+    filter.setDueAfter(dueAfter);
+    filter.setDueBefore(dueBefore);
+    filter.setPage(page);
+    filter.setSize(size);
+    filter.setSort(sort);
+    filter.setDirection(direction);
+
+    Page<Task> resultPage = taskService.getAllTasks(filter);
+    Page<GetTaskResponse> responsePage =
+        resultPage.map(taskMapper::mapToGetTaskResponse); // jedna encja -> DTO
+
+    return ResponseEntity.ok(responsePage);
+  }
+
   @GetMapping("/{id}")
   public ResponseEntity<GetTaskResponse> getTaskById(@PathVariable("id") UUID id) {
     Task task = taskService.findTaskById(id);
     GetTaskResponse response = taskMapper.mapToGetTaskResponse(task);
     return ResponseEntity.ok(response);
-  }
-
-  @GetMapping("/search")
-  public ResponseEntity<Page<GetTaskResponse>> searchTasks(
-      @ModelAttribute TaskFilter filter, @RequestParam("keyword") String keyword) {
-    filter.setTitle(keyword);
-
-    Page<Task> tasks = taskService.searchTasksByTitle(filter);
-    Page<GetTaskResponse> responsePage = taskMapper.mapToGetTaskResponse(tasks);
-
-    return ResponseEntity.ok(responsePage);
   }
 
   @PostMapping

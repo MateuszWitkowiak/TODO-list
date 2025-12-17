@@ -21,7 +21,6 @@ import com.example.todolist.entity.Status;
 import com.example.todolist.entity.Task;
 import com.example.todolist.exception.TaskNotFoundException;
 import com.example.todolist.service.TaskService;
-import com.example.todolist.service.filter.TaskFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,8 +32,6 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -115,32 +112,6 @@ class TaskApiControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.id", is(taskId1.toString())))
         .andExpect(jsonPath("$.title", is("Test 1")));
-  }
-
-  @Test
-  @DisplayName("GET /api/v1/tasks/search should return filtered tasks by keyword")
-  void shouldReturnFilteredTasksOnSearch() throws Exception {
-    // given
-    Task taskHello = new Task();
-    UUID helloId = UUID.randomUUID();
-    taskHello.setId(helloId);
-    taskHello.setTitle("Hello world");
-
-    GetTaskResponse helloResponse =
-        new GetTaskResponse(helloId, "Hello world", null, null, null, null, null);
-
-    Page<GetTaskResponse> responsePage = new PageImpl<>(List.of(helloResponse));
-
-    when(taskService.searchTasksByTitle(any(TaskFilter.class)))
-        .thenReturn(new PageImpl<>(List.of(taskHello)));
-    when(taskMapper.mapToGetTaskResponse(any(Page.class))).thenReturn(responsePage);
-
-    mockMvc
-        .perform(get(BASE_URL + "/search").param("keyword", "Hello"))
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.content", hasSize(1)))
-        .andExpect(jsonPath("$.content[0].title", is("Hello world")));
   }
 
   @Test
