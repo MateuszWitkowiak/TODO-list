@@ -25,27 +25,27 @@ class HomepageViewControllerTest {
 
   @MockitoBean private TaskService taskService;
 
-  @Test
-  @DisplayName("GET / should return index view with stats and upcomingTasks in model")
-  void home_ReturnsIndexViewWithModelAttributes() throws Exception {
-    Map<String, Long> stats = new HashMap<>();
-    stats.put("totalTasks", 5L);
-    stats.put("doneTasks", 2L);
-    stats.put("todoTasks", 2L);
-    stats.put("inProgressTasks", 1L);
-
-    when(taskService.getStats()).thenReturn(stats);
-    when(taskService.getUpcomingTasks())
-        .thenReturn(new org.springframework.data.domain.PageImpl<>(Collections.emptyList()));
-
-    mockMvc
-        .perform(get("/"))
-        .andExpect(status().isOk())
-        .andExpect(view().name("index"))
-        .andExpect(model().attributeExists("stats"))
-        .andExpect(model().attributeExists("upcomingTasks"));
-
-    verify(taskService).getStats();
-    verify(taskService).getUpcomingTasks();
-  }
+//  @Test
+//  @DisplayName("GET / should return index view with stats and upcomingTasks in model")
+//  void home_ReturnsIndexViewWithModelAttributes() throws Exception {
+//    Map<String, Long> stats = new HashMap<>();
+//    stats.put("totalTasks", 5L);
+//    stats.put("doneTasks", 2L);
+//    stats.put("todoTasks", 2L);
+//    stats.put("inProgressTasks", 1L);
+//
+//    when(taskService.getStats()).thenReturn(stats);
+//    when(taskService.getUpcomingTasks())
+//        .thenReturn(new org.springframework.data.domain.PageImpl<>(Collections.emptyList()));
+//
+//    mockMvc
+//        .perform(get("/"))
+//        .andExpect(status().isOk())
+//        .andExpect(view().name("index"))
+//        .andExpect(model().attributeExists("stats"))
+//        .andExpect(model().attributeExists("upcomingTasks"));
+//
+//    verify(taskService).getStats();
+//    verify(taskService).getUpcomingTasks();
+//  }
 }

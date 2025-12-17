@@ -355,12 +355,10 @@ class TaskServiceTest {
     taskService.searchTasksByTitle(filter);
 
     filter.setDueAfter(LocalDate.of(2024, 2, 1));
-    LocalDateTime expectedAfter = LocalDate.of(2024, 2, 1).atStartOfDay();
     taskService.searchTasksByTitle(filter);
 
     filter.setDueAfter(null);
     filter.setDueBefore(LocalDate.of(2024, 2, 20));
-    LocalDateTime expectedBefore = LocalDate.of(2024, 2, 20).atTime(LocalTime.MAX);
     taskService.searchTasksByTitle(filter);
 
     filter.setDueAfter(LocalDate.of(2024, 2, 1));
@@ -550,7 +548,7 @@ class TaskServiceTest {
     when(taskRepository.countByUserIdAndStatus(userId, Status.DONE)).thenReturn(3L);
     when(userService.getCurrentUser()).thenReturn(mockUser);
 
-    Map<String, Long> stats = taskService.getStats();
+    Map<String, Object> stats = taskService.getStats();
 
     assertEquals(10L, stats.get("totalTasks"));
     assertEquals(4L, stats.get("todoTasks"));

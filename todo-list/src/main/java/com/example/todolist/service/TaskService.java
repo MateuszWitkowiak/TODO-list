@@ -187,19 +187,22 @@ public class TaskService {
   }
 
   @Transactional(readOnly = true)
-  public Map<String, Long> getStats() {
+  public Map<String, Object> getStats() {
     UUID userId = userService.getCurrentUser().getId();
-    Map<String, Long> stats = new HashMap<>();
+    Map<String, Object> stats = new HashMap<>();
 
     long total = taskRepository.countByUserId(userId);
     long todo = taskRepository.countByUserIdAndStatus(userId, Status.TODO);
     long inProgress = taskRepository.countByUserIdAndStatus(userId, Status.IN_PROGRESS);
     long done = taskRepository.countByUserIdAndStatus(userId, Status.DONE);
 
+    int percentDone = (total == 0) ? 0 : (int) Math.round(100.0 * done / total);
+
     stats.put("totalTasks", total);
     stats.put("todoTasks", todo);
     stats.put("inProgressTasks", inProgress);
     stats.put("doneTasks", done);
+    stats.put("percentDone", percentDone);
 
     return stats;
   }

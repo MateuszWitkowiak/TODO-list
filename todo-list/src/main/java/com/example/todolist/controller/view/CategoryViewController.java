@@ -21,29 +21,29 @@ public class CategoryViewController {
 
   @GetMapping("/add")
   public String showAddCategoryForm(Model model) {
-      if (!model.containsAttribute("category")) {
-          model.addAttribute("category", new CreateCategoryRequest());
-      }
+    if (!model.containsAttribute("category")) {
+      model.addAttribute("category", new CreateCategoryRequest());
+    }
     return "category-add";
   }
 
-    @PostMapping
-    public String createCategory(
-            @ModelAttribute("category") @Valid CreateCategoryRequest request,
-            BindingResult bindingResult,
-            Model model) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("errorMessage", "Fix the errors below.");
-            return "category-add";
-        }
-        try {
-            categoryService.createCategory(request);
-        } catch (Exception e) {
-            model.addAttribute("errorMessage", e.getMessage());
-            return "category-add";
-        }
-        return "redirect:/categories";
+  @PostMapping
+  public String createCategory(
+      @ModelAttribute("category") @Valid CreateCategoryRequest request,
+      BindingResult bindingResult,
+      Model model) {
+    if (bindingResult.hasErrors()) {
+      model.addAttribute("errorMessage", "Fix the errors below.");
+      return "category-add";
     }
+    try {
+      categoryService.createCategory(request);
+    } catch (Exception e) {
+      model.addAttribute("errorMessage", e.getMessage());
+      return "category-add";
+    }
+    return "redirect:/categories";
+  }
 
   @GetMapping
   public String showCategories(
@@ -70,7 +70,7 @@ public class CategoryViewController {
       BindingResult bindingResult,
       Model model) {
     if (bindingResult.hasErrors()) {
-        model.addAttribute("category", dto);
+      model.addAttribute("category", dto);
       model.addAttribute("isEdit", true);
       model.addAttribute("categoryId", categoryId);
       return "category-add";
