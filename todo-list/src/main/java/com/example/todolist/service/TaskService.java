@@ -282,8 +282,7 @@ public class TaskService {
 
         UUID categoryId = null;
         if (row.length > 4 && row[4] != null && !row[4].isBlank()) {
-          Category category =
-              categoryRepository.findByNameAndUserId(row[4], user.getId()).orElse(null);
+          Category category = categoryRepository.findByNameAndUserId(row[4], user.getId()).orElse(null);
           if (category != null) {
             categoryId = category.getId();
           }
@@ -328,7 +327,7 @@ public class TaskService {
     } catch (CsvValidationException e) {
       throw new RuntimeException("CSV validation failed: ", e);
     } catch (Exception e) {
-      throw new RuntimeException("CSV import failed: ", e);
+      throw new RuntimeException("CSV import failed: " + e.getMessage(), e);
     }
   }
 }

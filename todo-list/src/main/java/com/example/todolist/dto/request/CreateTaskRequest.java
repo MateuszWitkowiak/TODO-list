@@ -35,6 +35,5 @@ public class CreateTaskRequest {
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private LocalDateTime dueDate;
 
-  @NotNull(message = "Task category id cannot be null")
   private UUID categoryId;
 }
