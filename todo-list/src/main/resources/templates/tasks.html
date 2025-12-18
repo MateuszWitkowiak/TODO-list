@@ -125,7 +125,7 @@
             </td>
 
             <td th:text="${#temporals.format(task.dueDate, 'dd.MM.yyyy')}"></td>
-            <td th:text="${task.status}"></td>
+            <td th:text="${task.status.label}"></td>
         </tr>
         </tbody>
     </table>
