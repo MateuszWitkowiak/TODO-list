@@ -66,7 +66,7 @@ public class TaskApiController {
 
     Page<Task> resultPage = taskService.getAllTasks(filter);
     Page<GetTaskResponse> responsePage =
-        resultPage.map(taskMapper::mapToGetTaskResponse); // jedna encja -> DTO
+        resultPage.map(taskMapper::mapToGetTaskResponse);
 
     return ResponseEntity.ok(responsePage);
   }
