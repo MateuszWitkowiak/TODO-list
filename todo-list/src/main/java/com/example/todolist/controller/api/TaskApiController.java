@@ -65,8 +65,7 @@ public class TaskApiController {
     filter.setDirection(direction);
 
     Page<Task> resultPage = taskService.getAllTasks(filter);
-    Page<GetTaskResponse> responsePage =
-        resultPage.map(taskMapper::mapToGetTaskResponse);
+    Page<GetTaskResponse> responsePage = resultPage.map(taskMapper::mapToGetTaskResponse);
 
     return ResponseEntity.ok(responsePage);
   }
